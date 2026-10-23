@@ -17,10 +17,11 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+    # THIS IS THE MAGIC STEP: It generates gradlew on the cloud server
+    - name: Generate Gradle Wrapper
+      run: gradle wrapper
 
-    - name: Build Debug APK
+    - name: Build APK
       run: ./gradlew assembleDebug
 
     - name: Upload APK
