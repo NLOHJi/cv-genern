@@ -1,7 +1,7 @@
 // @ts-nocheck
 (() => {
   // ⚠️ REPLACE THIS WITH YOUR ACTUAL CLOUDFLARE WORKER URL ⚠️
-  const WORKER_URL = "https://cv-gen-ai.justinwc8.workers.dev/"; 
+  const WORKER_URL = "YOUR_WORKER_URL_HERE"; 
 
   const $ = id => document.getElementById(id);
   let portfolio = null;
@@ -240,15 +240,13 @@
     show('screen-preview');
   });
 
-  // ⚠️ UPDATED PDF LOGIC FOR APK ⚠️
+  // ---------- NATIVE ANDROID PRINT HOOK ----------
   $('btn-print').addEventListener('click', () => { 
     const htmlContent = $('preview-frame').srcdoc;
     
-    // If running in Android APK, use the Native Print Interface
     if (window.AndroidPrint && window.AndroidPrint.printPage) {
       window.AndroidPrint.printPage(htmlContent);
     } else {
-      // Fallback for testing in browser
       $('preview-frame').contentWindow.focus(); 
       $('preview-frame').contentWindow.print(); 
     }
@@ -257,7 +255,7 @@
   document.querySelectorAll('[data-home], [data-back]').forEach(b => b.addEventListener('click', () => show('screen-home')));
   $('btn-go-generate').addEventListener('click', () => show('screen-generate'));
 
-  // ---------- TEMPLATES ----------
+  // ---------- OFFLINE TEMPLATES ----------
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   function buildProfessionalCV(p) {
