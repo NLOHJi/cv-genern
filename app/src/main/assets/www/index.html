@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <title>CV Studio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- IMPORT SCREEN -->
+<section id="screen-import" class="screen active">
+  <div class="hero-bg"></div>
+  <header class="bar glass">
+    <h1>CV Studio</h1>
+    <button id="btn-theme" class="icon-btn">🌙</button>
+  </header>
+  <main class="pad">
+    <div class="card glass" style="text-align: center; margin-top: 10vh;">
+      <div style="font-size: 40px; margin-bottom: 10px;">📁</div>
+      <h2>Import Portfolio</h2>
+      <p class="muted" style="margin-bottom: 20px;">Select the `.json` file exported from your Portfolio Generator.</p>
+      <input type="file" id="json-import" accept=".json" style="display: none;">
+      <button class="primary block" onclick="document.getElementById('json-import').click()">Choose JSON File</button>
+    </div>
+  </main>
+</section>
+
+<!-- HOME SCREEN -->
+<section id="screen-home" class="screen">
+  <div class="hero-bg"></div>
+  <header class="bar glass">
+    <h1>Dashboard <span style="font-size: 10px; color: #8b5cf6;">v1.0</span></h1>
+    <button id="btn-theme-home" class="icon-btn">🌙</button>
+  </header>
+  <main class="pad">
+    <div class="card glass">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <p class="muted" style="margin:0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Active Client</p>
+          <h2 id="active-name" style="margin: 5px 0; font-size: 22px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Loading...</h2>
+          <p id="active-headline" class="muted" style="margin:0;">...</p>
+        </div>
+        <div style="font-size: 30px;">👤</div>
+      </div>
+      <button class="ghost block" style="margin-top: 20px; font-size: 12px;" onclick="document.getElementById('json-import').click()">Replace Portfolio</button>
+    </div>
+
+    <button class="primary block glow" id="btn-go-generate" style="margin-top: 20px; padding: 18px; font-size: 16px;">✨ Create Document</button>
+  </main>
+</section>
+
+<!-- GENERATE SCREEN -->
+<section id="screen-generate" class="screen">
+  <div class="hero-bg"></div>
+  <header class="bar glass">
+    <button class="icon-btn" data-home>←</button>
+    <h1>Generate</h1>
+    <div style="width: 40px;"></div>
+  </header>
+  <main class="pad">
+    
+    <div class="card glass">
+      <label class="lbl">Document Type</label>
+      <select id="doc-type" class="premium-input">
+        <option value="professional_cv">Professional CV (Default)</option>
+        <option value="normal_cv">Normal CV (Rwandan Tables)</option>
+        <option value="cover_letter">Cover Letter</option>
+        <option value="application_letter">Application Letter</option>
+      </select>
+
+      <label class="lbl">Target Job Title (Optional)</label>
+      <input type="text" id="job-title" class="premium-input" placeholder="e.g. Irrigation Technician">
+
+      <label class="lbl">Company Name (Optional)</label>
+      <input type="text" id="company" class="premium-input" placeholder="e.g. Rwanda Agriculture Board">
+    </div>
+
+    <div class="card glass" id="extra-fields" style="display:none; border-left: 4px solid #f59e0b;">
+      <p class="muted" style="margin-top:0; font-weight:bold; color:#f59e0b;">Normal CV Details:</p>
+      <label class="lbl">Address</label>
+      <input type="text" id="extra-address" class="premium-input" placeholder="e.g. Gicumbi, Rwanda">
+      <label class="lbl">Date of Birth</label>
+      <input type="text" id="extra-dob" class="premium-input" placeholder="e.g. 12/05/2002">
+      <label class="lbl">Nationality</label>
+      <input type="text" id="extra-nationality" class="premium-input" placeholder="e.g. Rwandan">
+    </div>
+
+    <div class="card glass">
+      <label class="lbl">Enter Job Ad (Optional)</label>
+      <textarea id="job-ad" class="premium-input" rows="3" placeholder="Paste the job description here, or attach a file below..."></textarea>
+      <input type="file" id="job-ad-file" accept="*/*" style="display: none;">
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button type="button" class="ghost" style="flex:1; font-size:12px; padding: 8px;" onclick="document.getElementById('job-ad-file').click()">
+          📎 Attach Any File (Image, PDF, Doc)
+        </button>
+        <button type="button" id="btn-clear-file" class="ghost" style="color:#ef4444; border-color:#ef4444; display:none; padding: 8px;" onclick="clearJobFile()">✕</button>
+      </div>
+      <p id="file-status" class="muted" style="font-size:12px; margin-top:8px; display:none; color:#3b82f6; font-weight:bold; word-break: break-all;"></p>
+    </div>
+
+    <div class="card glass pro-card">
+      <label class="row" style="font-weight: bold; cursor: pointer; color: #fff;">
+        <input type="checkbox" id="use-ai" style="width: auto; margin:0; width: 20px; height: 20px; accent-color: #8b5cf6;">
+        <span style="background: linear-gradient(90deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">✨ Use Pro Cloud AI</span>
+      </label>
+      <p class="muted" style="font-size: 11px; margin-top: 8px; margin-bottom:0; color: #94a3b8;">Privacy-First: Sends only public job details to the AI. Fills in your private data locally.</p>
+    </div>
+
+    <div class="card glass" id="ai-auth-box" style="display:none; border-left: 4px solid #8b5cf6;">
+      <label class="lbl" style="color:#8b5cf6;">Pro Phone Number</label>
+      <input type="tel" id="pro-phone" class="premium-input" placeholder="e.g. 0788123456">
+      
+      <div id="pin-setup-group">
+        <label class="lbl" style="color:#8b5cf6;">Create a 4-digit PIN</label>
+        <input type="password" id="pro-pin-setup" class="premium-input" maxlength="4" placeholder="e.g. 1234">
+      </div>
+      
+      <div id="pin-verify-group" style="display:none;">
+        <label class="lbl" style="color:#8b5cf6;">Enter Security PIN</label>
+        <input type="password" id="pro-pin-verify" class="premium-input" maxlength="4" placeholder="e.g. 1234">
+      </div>
+      
+      <button type="button" id="btn-request-access" class="primary block" style="margin-top: 15px; padding: 10px; font-size: 13px; background: #8b5cf6;">Request Access</button>
+      <p id="auth-status" class="muted" style="font-size: 11px; margin-top: 10px; color: #8b5cf6; text-align: center;"></p>
+    </div>
+
+    <button id="btn-do-generate" class="primary block glow" style="margin-top: 20px; padding: 18px; font-size: 16px;">Generate Document</button>
+  </main>
+</section>
+
+<!-- PREVIEW SCREEN -->
+<section id="screen-preview" class="screen">
+  <header class="bar glass">
+    <button class="icon-btn" data-back>←</button>
+    <h1>Preview</h1>
+    <button class="icon-btn" id="btn-print" style="color: #3b82f6; border-color: #3b82f6; font-weight: bold;">PDF</button>
+  </header>
+  <iframe id="preview-frame" class="preview-frame"></iframe>
+</section>
+
+<script src="script.js"></script>
+</body>
+</html>
