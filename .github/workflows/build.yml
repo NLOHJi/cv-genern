@@ -20,14 +20,17 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v4
 
-    # This step explicitly uses Gradle 8.5 to generate the wrapper
-    - name: Generate Gradle Wrapper
+    # Configure Gradle environment with a specific version
+    - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
       with:
         gradle-version: '8.5'
-        arguments: wrapper
 
-    # Now use the newly generated wrapper to build
+    # Generate the wrapper using the configured Gradle version
+    - name: Generate Gradle Wrapper
+      run: gradle wrapper
+
+    # Build the APK using the newly generated wrapper
     - name: Build APK
       run: ./gradlew assembleDebug
 
