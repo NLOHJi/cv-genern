@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Release APK
 
 on:
   push:
@@ -20,22 +20,30 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v4
 
-    # Configure Gradle environment with a specific version
+    # 1. Decode the keystore from GitHub Secrets
+    - name: Decode Keystore
+      run: |
+        echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
       with:
         gradle-version: '8.5'
 
-    # Generate the wrapper using the configured Gradle version
     - name: Generate Gradle Wrapper
       run: gradle wrapper
 
-    # Build the APK using the newly generated wrapper
-    - name: Build APK
-      run: ./gradlew assembleDebug
+    # 2. Build the RELEASE APK using the secrets
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
+      env:
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
-    - name: Upload APK
+    # 3. Upload the Release APK
+    - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
-        name: CV-Studio-App
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: CV-Studio-App-Release
+        path: app/build/outputs/apk/release/app-release.apk
