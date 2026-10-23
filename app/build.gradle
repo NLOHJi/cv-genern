@@ -11,24 +11,12 @@ android {
         applicationId "com.rw.cvstudio"
         minSdk 24
         targetSdk 34
-        versionCode 1 // Bumped to 2 for the release build
+        versionCode 1
         versionName "1.0"
     }
 
-    // --- ADD THIS BLOCK ---
-    signingConfigs {
-        release {
-            storeFile file("${rootDir}/keystore.jks")
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            keyAlias System.getenv("ANDROID_KEY_ALIAS")
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD")
-        }
-    }
-    // ----------------------
-
     buildTypes {
         release {
-            signingConfig signingConfigs.release // Link to release config
             minifyEnabled false
         }
     }
