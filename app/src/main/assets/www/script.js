@@ -114,57 +114,56 @@
   });
 
   // ---------- AI AUTH & REQUEST ACCESS ----------
-  $('use-ai').addEventListener('change', (e) => {
-    if (e.target.checked) {
-      $('ai-auth-box').style.display = 'block';
-      const savedPhone = localStorage.getItem('pro_phone'), savedPin = localStorage.getItem('pro_pin');
-      
-      if (savedPhone && savedPin) {
-        $('pro-phone').value = savedPhone; $('pro-phone').disabled = true;
-        $('pin-setup-group').style.display = 'none'; $('pin-verify-group').style.display = 'none';
-        $('auth-status').textContent = "✅ Pro AI is Active for " + savedPhone;
-        $('btn-request-access').style.display = 'none';
-      } else if (savedPhone) {
-        $('pro-phone').value = savedPhone; $('pro-phone').disabled = true;
-        $('pin-setup-group').style.display = 'none'; $('pin-verify-group').style.display = 'block';
-        $('auth-status').textContent = "⚠️ Please verify your identity to restore Pro AI.";
-      } else {
-        $('pin-setup-group').style.display = 'block'; $('pin-verify-group').style.display = 'none';
-        $('auth-status').textContent = "First time setup: Create a PIN and request access.";
-      }
-    } else { $('ai-auth-box').style.display = 'none'; }
-  });
-
-  $('btn-request-access').addEventListener('click', async () => {
-    const phone = $('pro-phone').value;
-    const pinSetup = $('pro-pin-setup').value;
-    const pinVerify = $('pro-pin-verify').value;
+  $('use-ai').addEventListener('change', async (e) => {
+  if (e.target.checked) {
+    $('ai-auth-box').style.display = 'block';
+    const savedPhone = localStorage.getItem('pro_phone');
     
-    if (!phone) return alert("Please enter your phone number.");
-    $('auth-status').textContent = "⏳ Requesting access...";
-    
-    try {
-      const res = await fetch(WORKER_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "request_access", phone: phone, pin: pinSetup || pinVerify })
-      });
+    if (savedPhone) {
+      $('pro-phone').value = savedPhone; 
+      $('pro-phone').disabled = true;
+      $('pin-setup-group').style.display = 'none'; 
+      $('pin-verify-group').style.display = 'none';
+      $('auth-status').textContent = "⏳ Verifying Pro status with Cloudflare...";
+      $('btn-request-access').style.display = 'none';
       
-      const data = await res.json();
-      
-      if (res.ok) {
-        localStorage.setItem('pro_phone', phone);
-        if (pinSetup) localStorage.setItem('pro_pin', pinSetup);
-        $('auth-status').textContent = "✅ Request sent! Wait for Admin approval on Telegram.";
-        $('btn-request-access').style.display = 'none';
-      } else {
-        $('auth-status').textContent = "❌ " + (data.error || "Failed to request");
+      try {
+        const res = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "check_status", phone: savedPhone })
+        });
+        const data = await res.json();
+        
+        if (data.status === "approved") {
+          $('auth-status').textContent = "✅ Pro AI is Active for " + savedPhone;
+          $('auth-status').style.color = "#10b981"; // Green
+        } else if (data.status === "pending") {
+          $('auth-status').textContent = "⏳ Pending Admin approval on Telegram.";
+          $('auth-status').style.color = "#f59e0b"; // Orange
+          $('btn-request-access').style.display = 'block'; // Allow them to re-request
+        } else {
+          $('auth-status').textContent = "❌ Not active. Please request access.";
+          $('auth-status').style.color = "#ef4444"; // Red
+          $('pin-verify-group').style.display = 'block';
+          $('btn-request-access').style.display = 'block';
+        }
+      } catch (err) {
+        $('auth-status').textContent = "❌ Cannot connect to Cloudflare.";
+        $('auth-status').style.color = "#ef4444";
       }
-    } catch (e) {
-      $('auth-status').textContent = "❌ Network error. Check Worker URL.";
+      
+    } else {
+      $('pin-setup-group').style.display = 'block'; 
+      $('pin-verify-group').style.display = 'none';
+      $('auth-status').textContent = "First time setup: Create a PIN and request access.";
+      $('auth-status').style.color = "#8b5cf6";
+      $('btn-request-access').style.display = 'block';
     }
-  });
-
+  } else { 
+    $('ai-auth-box').style.display = 'none'; 
+  }
+});
   // ---------- GENERATION ----------
   $('btn-do-generate').addEventListener('click', async () => {
     if (!portfolio) return;
