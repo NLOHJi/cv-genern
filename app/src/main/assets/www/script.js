@@ -164,6 +164,60 @@
     $('ai-auth-box').style.display = 'none'; 
   }
 });
+
+  $('btn-request-access').addEventListener('click', async () => {
+  alert("1. Button was clicked!");
+  
+  const phoneEl = $('pro-phone');
+  if (!phoneEl) return alert("Error: Phone input field not found in HTML!");
+  
+  const phone = phoneEl.value;
+  const pinSetupEl = $('pro-pin-setup');
+  const pinVerifyEl = $('pro-pin-verify');
+  const pinSetup = pinSetupEl ? pinSetupEl.value : '';
+  const pinVerify = pinVerifyEl ? pinVerifyEl.value : '';
+  
+  alert("2. Phone Number typed: " + phone);
+  
+  if (!phone) return alert("3. Please enter a phone number first.");
+  
+  $('auth-status').textContent = "⏳ Requesting access...";
+  $('auth-status').style.color = "#8b5cf6";
+  $('btn-request-access').textContent = "Sending...";
+  
+  try {
+    alert("4. Sending fetch to: " + WORKER_URL);
+    
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "request_access", phone: phone, pin: pinSetup || pinVerify })
+    });
+    
+    alert("5. Got response from Cloudflare. Status: " + res.status);
+    
+    const data = await res.json();
+    alert("6. Cloudflare says: " + JSON.stringify(data));
+    
+    if (res.ok) {
+      localStorage.setItem('pro_phone', phone);
+      if (pinSetup) localStorage.setItem('pro_pin', pinSetup);
+      
+      $('auth-status').textContent = "✅ Request sent! Wait for Admin approval on Telegram.";
+      $('auth-status').style.color = "#10b981";
+      $('btn-request-access').textContent = "Re-send Request";
+    } else {
+      $('auth-status').textContent = "❌ " + (data.error || "Failed to request");
+      $('auth-status').style.color = "#ef4444";
+      $('btn-request-access').textContent = "Request Access";
+    }
+  } catch (e) {
+    alert("7. Fetch Error: " + e.message);
+    $('auth-status').textContent = "❌ Network error. Check Worker URL.";
+    $('auth-status').style.color = "#ef4444";
+    $('btn-request-access').textContent = "Request Access";
+  }
+});
   // ---------- GENERATION ----------
   $('btn-do-generate').addEventListener('click', async () => {
     if (!portfolio) return;
