@@ -115,109 +115,136 @@
 
   // ---------- AI AUTH & REQUEST ACCESS ----------
   $('use-ai').addEventListener('change', async (e) => {
-  if (e.target.checked) {
-    $('ai-auth-box').style.display = 'block';
-    const savedPhone = localStorage.getItem('pro_phone');
-    
-    if (savedPhone) {
-      $('pro-phone').value = savedPhone; 
-      $('pro-phone').disabled = true;
-      $('pin-setup-group').style.display = 'none'; 
-      $('pin-verify-group').style.display = 'none';
-      $('auth-status').textContent = "⏳ Verifying Pro status with Cloudflare...";
-      $('btn-request-access').style.display = 'none';
+    const banner = $('ai-status-banner');
+    if (e.target.checked) {
+      $('ai-auth-box').style.display = 'block';
+      $('btn-verify').style.display = 'block';
       
-      try {
-        const res = await fetch(WORKER_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "check_status", phone: savedPhone })
-        });
-        const data = await res.json();
+      const savedPhone = localStorage.getItem('pro_phone');
+      if (savedPhone) {
+        $('pro-phone').value = savedPhone; 
+        $('pro-phone').disabled = true;
+        $('pin-setup-group').style.display = 'none'; 
+        $('pin-verify-group').style.display = 'none';
+        $('auth-status').textContent = "⏳ Verifying Pro status...";
         
-        if (data.status === "approved") {
-          $('auth-status').textContent = "✅ Pro AI is Active for " + savedPhone;
-          $('auth-status').style.color = "#10b981"; // Green
-        } else if (data.status === "pending") {
-          $('auth-status').textContent = "⏳ Pending Admin approval on Telegram.";
-          $('auth-status').style.color = "#f59e0b"; // Orange
-          $('btn-request-access').style.display = 'block'; // Allow them to re-request
-        } else {
-          $('auth-status').textContent = "❌ Not active. Please request access.";
-          $('auth-status').style.color = "#ef4444"; // Red
-          $('pin-verify-group').style.display = 'block';
-          $('btn-request-access').style.display = 'block';
-        }
-      } catch (err) {
-        $('auth-status').textContent = "❌ Cannot connect to Cloudflare.";
-        $('auth-status').style.color = "#ef4444";
-      }
-      
-    } else {
-      $('pin-setup-group').style.display = 'block'; 
-      $('pin-verify-group').style.display = 'none';
-      $('auth-status').textContent = "First time setup: Create a PIN and request access.";
-      $('auth-status').style.color = "#8b5cf6";
-      $('btn-request-access').style.display = 'block';
-    }
-  } else { 
-    $('ai-auth-box').style.display = 'none'; 
-  }
-});
+        try {
+          const res = await fetch(WORKER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "check_status", phone: savedPhone })
+          });
+          const data = await res.json();
+          
+          if (data.status === "approved") {
+         $('auth-status').textContent = `✅ Pro AI Active (${12 - data.credits} credits left)`;
+         $('auth-status').style.color = "#10b981"; 
 
-  $('btn-request-access').addEventListener('click', async () => {
-  alert("1. Button was clicked!");
-  
-  const phoneEl = $('pro-phone');
-  if (!phoneEl) return alert("Error: Phone input field not found in HTML!");
-  
-  const phone = phoneEl.value;
-  const pinSetupEl = $('pro-pin-setup');
-  const pinVerifyEl = $('pro-pin-verify');
-  const pinSetup = pinSetupEl ? pinSetupEl.value : '';
-  const pinVerify = pinVerifyEl ? pinVerifyEl.value : '';
-  
-  alert("2. Phone Number typed: " + phone);
-  
-  if (!phone) return alert("3. Please enter a phone number first.");
-  
-  $('auth-status').textContent = "⏳ Requesting access...";
-  $('auth-status').style.color = "#8b5cf6";
-  $('btn-request-access').textContent = "Sending...";
-  
-  try {
-    alert("4. Sending fetch to: " + WORKER_URL);
-    
-    const res = await fetch(WORKER_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "request_access", phone: phone, pin: pinSetup || pinVerify })
-    });
-    
-    alert("5. Got response from Cloudflare. Status: " + res.status);
-    
-    const data = await res.json();
-    alert("6. Cloudflare says: " + JSON.stringify(data));
-    
-    if (res.ok) {
-      localStorage.setItem('pro_phone', phone);
-      if (pinSetup) localStorage.setItem('pro_pin', pinSetup);
-      
-      $('auth-status').textContent = "✅ Request sent! Wait for Admin approval on Telegram.";
-      $('auth-status').style.color = "#10b981";
-      $('btn-request-access').textContent = "Re-send Request";
-    } else {
-      $('auth-status').textContent = "❌ " + (data.error || "Failed to request");
-      $('auth-status').style.color = "#ef4444";
-      $('btn-request-access').textContent = "Request Access";
+} else if (data.status === "revoked") {
+  $('auth-status').textContent = "⚠️ Your 12 credits are used up. Please renew.";
+  $('auth-status').style.color = "#ef4444";
+  $('btn-verify').textContent = "Request Renewal";
+  $('btn-verify').style.display = 'block';
+  banner.style.display = 'none';
+
+} else if (data.status === "pending") {
+            // CHECK AI AVAILABILITY
+            banner.style.display = 'block';
+            banner.style.background = '#f3f4f6';
+            banner.style.color = '#374151';
+            banner.textContent = "⏳ Checking AI availability...";
+            
+            const aiRes = await fetch(WORKER_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "check_ai_status" })
+            });
+            const aiData = await aiRes.json();
+            
+            if (aiData.status === "online") {
+              banner.style.background = '#d1fae5';
+              banner.style.color = '#065f46';
+              banner.textContent = aiData.message;
+            } else if (aiData.status === "limit_reached") {
+              banner.style.background = '#fee2e2';
+              banner.style.color = '#991b1b';
+              banner.textContent = aiData.message;
+            } else {
+              banner.style.background = '#fef3c7';
+              banner.style.color = '#92400e';
+              banner.textContent = "⚠️ " + aiData.message;
+            }
+            
+          } else if (data.status === "pending") {
+            $('auth-status').textContent = "⏳ Pending approval.";
+            $('auth-status').style.color = "#f59e0b";
+            $('btn-verify').textContent = "Re-send Request";
+            banner.style.display = 'none';
+          } else {
+            $('auth-status').textContent = "❌ Not active. Please verify your number.";
+            $('auth-status').style.color = "#ef4444";
+            $('btn-verify').textContent = "Request Access";
+            banner.style.display = 'none';
+          }
+        } catch (err) {
+          $('auth-status').textContent = "❌ Can't connect to Cloud.";
+          $('auth-status').style.color = "#ef4444";
+        }
+      } else {
+        $('pin-setup-group').style.display = 'block'; 
+        $('pin-verify-group').style.display = 'none';
+        $('auth-status').textContent = "First time setup: Create a PIN and verify.";
+        $('auth-status').style.color = "#8b5cf6";
+        banner.style.display = 'none';
+      }
+    } else { 
+      $('ai-auth-box').style.display = 'none'; 
+      banner.style.display = 'none';
     }
-  } catch (e) {
-    alert("7. Fetch Error: " + e.message);
-    $('auth-status').textContent = "❌ Network error. Check Worker URL.";
-    $('auth-status').style.color = "#ef4444";
-    $('btn-request-access').textContent = "Request Access";
-  }
-});
+  });
+
+  $('btn-verify').addEventListener('click', async () => {
+    const phone = $('pro-phone').value;
+    const pinSetup = $('pro-pin-setup').value;
+    const pinVerify = $('pro-pin-verify').value;
+    
+    if (!phone) return alert("Please enter your phone number.");
+    
+    $('auth-status').textContent = "⏳ Requesting access...";
+    $('auth-status').style.color = "#8b5cf6";
+    $('btn-verify').textContent = "Verifying...";
+    $('btn-verify').disabled = true;
+    
+    try {
+      const res = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify", phone: phone, pin: pinSetup || pinVerify })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        localStorage.setItem('pro_phone', phone);
+        if (pinSetup) localStorage.setItem('pro_pin', pinSetup);
+        
+        $('auth-status').textContent = "✅ " + data.message;
+        $('auth-status').style.color = "#10b981";
+        $('btn-verify').textContent = "Re-send Request";
+      } else {
+        $('auth-status').textContent = "❌ " + (data.error || "Failed to request");
+        $('auth-status').style.color = "#ef4444";
+        $('btn-verify').textContent = "Request Access";
+      }
+    } catch (e) {
+      $('auth-status').textContent = "❌ Network error. Check Worker URL.";
+      $('auth-status').style.color = "#ef4444";
+      $('btn-verify').textContent = "Request Access";
+    }
+    
+    $('btn-verify').disabled = false;
+  });
+
   // ---------- GENERATION ----------
   $('btn-do-generate').addEventListener('click', async () => {
     if (!portfolio) return;

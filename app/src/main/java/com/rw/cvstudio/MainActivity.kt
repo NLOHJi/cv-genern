@@ -10,7 +10,6 @@ import android.print.PrintManager
 import android.text.InputType
 import android.webkit.*
 import android.widget.EditText
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -24,21 +23,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         webView = WebView(this)
-
-        // Core Settings
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
         webView.settings.allowFileAccess = true
         webView.settings.allowContentAccess = true
-        webView.settings.allowUniversalAccessFromFileURLs = true
 
-        // 1. Handle Native Printing
         webView.addJavascriptInterface(WebAppInterface(), "AndroidPrint")
 
-        // 2. Handle File Uploads and JS Dialogs (Alert, Prompt, Confirm)
         webView.webChromeClient = object : WebChromeClient() {
-            
-            // File Picker
             override fun onShowFileChooser(
                 webView: WebView?,
                 callback: ValueCallback<Array<Uri>>?,
@@ -58,48 +50,35 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
 
-            // Alert Dialog
             override fun onJsAlert(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
-                AlertDialog.Builder(this@MainActivity)
-                    .setMessage(message)
+                AlertDialog.Builder(this@MainActivity).setMessage(message)
                     .setPositiveButton("OK") { _, _ -> result?.confirm() }
-                    .setCancelable(false)
-                    .show()
+                    .setCancelable(false).show()
                 return true
             }
 
-            // Confirm Dialog
             override fun onJsConfirm(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
-                AlertDialog.Builder(this@MainActivity)
-                    .setMessage(message)
+                AlertDialog.Builder(this@MainActivity).setMessage(message)
                     .setPositiveButton("OK") { _, _ -> result?.confirm() }
                     .setNegativeButton("Cancel") { _, _ -> result?.cancel() }
-                    .setCancelable(false)
-                    .show()
+                    .setCancelable(false).show()
                 return true
             }
 
-            // Prompt Dialog (Used for entering Client Name)
             override fun onJsPrompt(view: WebView?, url: String?, message: String?, defaultValue: String?, result: JsPromptResult?): Boolean {
                 val input = EditText(this@MainActivity)
                 input.inputType = InputType.TYPE_CLASS_TEXT
                 input.setText(defaultValue)
-                
-                AlertDialog.Builder(this@MainActivity)
-                    .setMessage(message)
-                    .setView(input)
+                AlertDialog.Builder(this@MainActivity).setMessage(message).setView(input)
                     .setPositiveButton("OK") { _, _ -> result?.confirm(input.text.toString()) }
                     .setNegativeButton("Cancel") { _, _ -> result?.cancel() }
-                    .setCancelable(false)
-                    .show()
+                    .setCancelable(false).show()
                 return true
             }
         }
 
         webView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                return false // Keep navigation inside the app
-            }
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean = false
         }
 
         setContentView(webView)
@@ -122,7 +101,6 @@ class MainActivity : AppCompatActivity() {
         if (webView.canGoBack()) webView.goBack() else super.onBackPressed()
     }
 
-    // Native Print Interface
     inner class WebAppInterface {
         @JavascriptInterface
         fun printPage(htmlContent: String) {

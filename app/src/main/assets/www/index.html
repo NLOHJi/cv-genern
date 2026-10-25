@@ -19,10 +19,10 @@
   <main class="pad">
     <div class="card glass" style="text-align: center; margin-top: 10vh;">
       <div style="font-size: 40px; margin-bottom: 10px;">📁</div>
-      <h2>NEED PORTFOLIO TO WORK </h2>
-      <p class="muted" style="margin-bottom: 20px;">ENTER your  <h1>.json</h1>Portfolio</p>
+      <h2>NEED PORTFOLIO \n TO WORK </h2>
+      <p class="muted" style="margin-bottom: 20px;">ENTER your <h1>.json</h1> Portfolio</p>
       <input type="file" id="json-import" accept=".json" style="display: none;">
-      <button class="primary block" onclick="document.getElementById('json-import').click()">ADD+ </button>
+      <button class="primary block" onclick="document.getElementById('json-import').click()"><h2>ADD+</h2></button>
     </div>
   </main>
 </section>
@@ -38,7 +38,7 @@
     <div class="card glass">
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
-          <p class="muted" style="margin:0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Active Client</p>
+          <p class="muted" style="margin:0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">You are in real \n place </p>
           <h2 id="active-name" style="margin: 5px 0; font-size: 22px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Loading...</h2>
           <p id="active-headline" class="muted" style="margin:0;">...</p>
         </div>
@@ -56,7 +56,7 @@
   <div class="hero-bg"></div>
   <header class="bar glass">
     <button class="icon-btn" data-home>←</button>
-    <h1>Generate</h1>
+    <h1>ENTER</h1>
     <div style="width: 40px;"></div>
   </header>
   <main class="pad">
@@ -70,7 +70,7 @@
         <option value="application_letter">Application Letter</option>
       </select>
 
-      <label class="lbl">Target Job Title (Optional)</label>
+      <label class="lbl">Job Title (Optional)</label>
       <input type="text" id="job-title" class="premium-input" placeholder="e.g. Irrigation Technician">
 
       <label class="lbl">Company Name (Optional)</label>
@@ -109,7 +109,7 @@
     </div>
 
     <div class="card glass" id="ai-auth-box" style="display:none; border-left: 4px solid #8b5cf6;">
-      <label class="lbl" style="color:#8b5cf6;">Pro Phone Number</label>
+      <label class="lbl" style="color:#8b5cf6;">Phone Number</label>
       <input type="tel" id="pro-phone" class="premium-input" placeholder="e.g. 0788123456">
       
       <div id="pin-setup-group">
@@ -118,15 +118,15 @@
       </div>
       
       <div id="pin-verify-group" style="display:none;">
-        <label class="lbl" style="color:#8b5cf6;">Enter Security PIN</label>
+        <label class="lbl" style="color:#8b5cf6;">Enter your PIN</label>
         <input type="password" id="pro-pin-verify" class="premium-input" maxlength="4" placeholder="e.g. 1234">
       </div>
       
-      <button type="button" id="btn-request-access" class="primary block" style="margin-top: 15px; padding: 10px; font-size: 13px; background: #8b5cf6;">Request Access</button>
+      <button type="button" id="btn-verify" class="primary block" style="margin-top: 15px; padding: 10px; font-size: 13px; background: #8b5cf6;"><h2>VERIFY</h2></button>
       <p id="auth-status" class="muted" style="font-size: 11px; margin-top: 10px; color: #8b5cf6; text-align: center;"></p>
     </div>
 
-    <button id="btn-do-generate" class="primary block glow" style="margin-top: 20px; padding: 18px; font-size: 16px;">Generate Document</button>
+    <button id="btn-do-generate" class="primary block glow" style="margin-top: 20px; padding: 18px; font-size: 16px;">Generate</button>
   </main>
 </section>
 

@@ -28,7 +28,6 @@ jobs:
     - name: Generate Gradle Wrapper
       run: gradle wrapper
 
-    # Build Debug APK
     - name: Build APK
       run: ./gradlew assembleDebug
 
