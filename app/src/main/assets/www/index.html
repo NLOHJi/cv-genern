@@ -31,14 +31,20 @@
 <section id="screen-home" class="screen">
   <div class="hero-bg"></div>
   <header class="bar glass">
-    <h1>Dashboard <span style="font-size: 10px; color: #8b5cf6;">v1.0</span></h1>
+    <h1>Dashboard <span style="font-size: 10px; color: #8b5cf6;">v1.7</span></h1>
     <button id="btn-theme-home" class="icon-btn">🌙</button>
   </header>
   <main class="pad">
+    <!-- ADD THE BANNER HERE -->
+    <div id="ai-status-banner" style="display:none; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; font-weight: bold; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+      <div id="banner-text" style="margin-bottom: 10px;">Processing...</div>
+      <button id="btn-view-doc" class="primary block" style="display:none; padding: 10px; background: #10b981;">📄 View Generated Document</button>
+    </div>
+
     <div class="card glass">
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
-          <p class="muted" style="margin:0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">You are in real \n place </p>
+          <p class="muted" style="margin:0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Active Client</p>
           <h2 id="active-name" style="margin: 5px 0; font-size: 22px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Loading...</h2>
           <p id="active-headline" class="muted" style="margin:0;">...</p>
         </div>
@@ -50,7 +56,7 @@
     <button class="primary block glow" id="btn-go-generate" style="margin-top: 20px; padding: 18px; font-size: 16px;">✨ Create Document</button>
   </main>
 </section>
-
+  
 <!-- GENERATE SCREEN -->
 <section id="screen-generate" class="screen">
   <div class="hero-bg"></div>

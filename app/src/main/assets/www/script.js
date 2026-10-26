@@ -5,6 +5,8 @@
 
   const $ = id => document.getElementById(id);
   let portfolio = null;
+  let currentAiHtml = null;
+  let pollingInterval = null;
 
   const show = id => { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); window.scrollTo(0,0); };
 
@@ -72,180 +74,85 @@
 
   $('doc-type').addEventListener('change', e => { $('extra-fields').style.display = (e.target.value === 'normal_cv') ? 'block' : 'none'; });
 
-  // ---------- UNIFIED FILE UPLOAD LOGIC ----------
+  // ---------- FILE UPLOAD ----------
   let uploadedFileData = null; 
   let uploadedFileType = null;
 
   window.clearJobFile = function() {
-    uploadedFileData = null;
-    uploadedFileType = null;
-    $('job-ad-file').value = '';
-    $('file-status').style.display = 'none';
-    $('btn-clear-file').style.display = 'none';
-    $('job-ad').value = '';
+    uploadedFileData = null; uploadedFileType = null;
+    $('job-ad-file').value = ''; $('file-status').style.display = 'none';
+    $('btn-clear-file').style.display = 'none'; $('job-ad').value = '';
   };
 
   $('job-ad-file').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    const status = $('file-status');
-    status.style.display = 'block';
-    status.textContent = "⏳ Reading file...";
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader(); const status = $('file-status');
+    status.style.display = 'block'; status.textContent = "⏳ Reading file...";
     $('btn-clear-file').style.display = 'block';
 
     if (file.type.startsWith('text/') || file.name.endsWith('.txt')) {
-      reader.onload = ev => {
-        $('job-ad').value = ev.target.result;
-        status.textContent = `✅ Text loaded: ${file.name}`;
-        uploadedFileData = null; 
-      };
+      reader.onload = ev => { $('job-ad').value = ev.target.result; status.textContent = `✅ Text loaded: ${file.name}`; uploadedFileData = null; };
       reader.readAsText(file);
     } else {
-      reader.onload = ev => {
-        uploadedFileData = ev.target.result; 
-        uploadedFileType = file.type;
-        $('job-ad').value = ''; 
-        status.textContent = `✅ Attached: ${file.name} (AI will read this)`;
-      };
+      reader.onload = ev => { uploadedFileData = ev.target.result; uploadedFileType = file.type; $('job-ad').value = ''; status.textContent = `✅ Attached: ${file.name} (AI will read this)`; };
       reader.readAsDataURL(file);
     }
   });
 
-  // ---------- AI AUTH & REQUEST ACCESS ----------
+  // ---------- AI AUTH ----------
   $('use-ai').addEventListener('change', async (e) => {
-    const banner = $('ai-status-banner');
     if (e.target.checked) {
       $('ai-auth-box').style.display = 'block';
       $('btn-verify').style.display = 'block';
       
       const savedPhone = localStorage.getItem('pro_phone');
       if (savedPhone) {
-        $('pro-phone').value = savedPhone; 
-        $('pro-phone').disabled = true;
-        $('pin-setup-group').style.display = 'none'; 
-        $('pin-verify-group').style.display = 'none';
+        $('pro-phone').value = savedPhone; $('pro-phone').disabled = true;
+        $('pin-setup-group').style.display = 'none'; $('pin-verify-group').style.display = 'none';
         $('auth-status').textContent = "⏳ Verifying Pro status...";
         
         try {
-          const res = await fetch(WORKER_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "check_status", phone: savedPhone })
-          });
+          const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "check_status", phone: savedPhone }) });
           const data = await res.json();
           
           if (data.status === "approved") {
-         $('auth-status').textContent = `✅ Pro AI Active (${12 - data.credits} credits left)`;
-         $('auth-status').style.color = "#10b981"; 
-
-} else if (data.status === "revoked") {
-  $('auth-status').textContent = "⚠️ Your 12 credits are used up. Please renew.";
-  $('auth-status').style.color = "#ef4444";
-  $('btn-verify').textContent = "Request Renewal";
-  $('btn-verify').style.display = 'block';
-  banner.style.display = 'none';
-
-} else if (data.status === "pending") {
-            // CHECK AI AVAILABILITY
-            banner.style.display = 'block';
-            banner.style.background = '#f3f4f6';
-            banner.style.color = '#374151';
-            banner.textContent = "⏳ Checking AI availability...";
-            
-            const aiRes = await fetch(WORKER_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "check_ai_status" })
-            });
-            const aiData = await aiRes.json();
-            
-            if (aiData.status === "online") {
-              banner.style.background = '#d1fae5';
-              banner.style.color = '#065f46';
-              banner.textContent = aiData.message;
-            } else if (aiData.status === "limit_reached") {
-              banner.style.background = '#fee2e2';
-              banner.style.color = '#991b1b';
-              banner.textContent = aiData.message;
-            } else {
-              banner.style.background = '#fef3c7';
-              banner.style.color = '#92400e';
-              banner.textContent = "⚠️ " + aiData.message;
-            }
-            
-          } else if (data.status === "pending") {
-            $('auth-status').textContent = "⏳ Pending approval.";
-            $('auth-status').style.color = "#f59e0b";
-            $('btn-verify').textContent = "Re-send Request";
-            banner.style.display = 'none';
+            $('auth-status').textContent = `✅ Pro AI Active (${12 - data.credits} credits left)`;
+            $('auth-status').style.color = "#10b981"; 
+            $('btn-verify').style.display = 'none';
+          } else if (data.status === "revoked") {
+            $('auth-status').textContent = "⚠️ Credits used up. please renew.";
+            $('auth-status').style.color = "#ef4444";
+            $('btn-verify').textContent = "Request Renewal";
           } else {
-            $('auth-status').textContent = "❌ Not active. Please verify your number.";
+            $('auth-status').textContent = "❌ Not active. Please request access.";
             $('auth-status').style.color = "#ef4444";
             $('btn-verify').textContent = "Request Access";
-            banner.style.display = 'none';
           }
-        } catch (err) {
-          $('auth-status').textContent = "❌ Can't connect to Cloud.";
-          $('auth-status').style.color = "#ef4444";
-        }
+        } catch (err) { $('auth-status').textContent = "❌ Network error."; $('auth-status').style.color = "#ef4444"; }
       } else {
-        $('pin-setup-group').style.display = 'block'; 
-        $('pin-verify-group').style.display = 'none';
-        $('auth-status').textContent = "First time setup: Create a PIN and verify.";
+        $('pin-setup-group').style.display = 'block'; $('pin-verify-group').style.display = 'none';
+        $('auth-status').textContent = "First time setup: Create a PIN and request access.";
         $('auth-status').style.color = "#8b5cf6";
-        banner.style.display = 'none';
       }
-    } else { 
-      $('ai-auth-box').style.display = 'none'; 
-      banner.style.display = 'none';
-    }
+    } else { $('ai-auth-box').style.display = 'none'; }
   });
 
   $('btn-verify').addEventListener('click', async () => {
-    const phone = $('pro-phone').value;
-    const pinSetup = $('pro-pin-setup').value;
-    const pinVerify = $('pro-pin-verify').value;
-    
-    if (!phone) return alert("Please enter your phone number.");
-    
-    $('auth-status').textContent = "⏳ Requesting access...";
-    $('auth-status').style.color = "#8b5cf6";
-    $('btn-verify').textContent = "Verifying...";
-    $('btn-verify').disabled = true;
-    
+    const phone = $('pro-phone').value, pin = $('pro-pin-setup').value || $('pro-pin-verify').value;
+    if (!phone) return alert("Enter phone number.");
+    $('auth-status').textContent = "⏳ Requesting..."; $('btn-verify').disabled = true;
     try {
-      const res = await fetch(WORKER_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "verify", phone: phone, pin: pinSetup || pinVerify })
-      });
-      
+      const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "verify", phone, pin }) });
       const data = await res.json();
-      
       if (res.ok) {
-        localStorage.setItem('pro_phone', phone);
-        if (pinSetup) localStorage.setItem('pro_pin', pinSetup);
-        
-        $('auth-status').textContent = "✅ " + data.message;
-        $('auth-status').style.color = "#10b981";
-        $('btn-verify').textContent = "Re-send Request";
-      } else {
-        $('auth-status').textContent = "❌ " + (data.error || "Failed to request");
-        $('auth-status').style.color = "#ef4444";
-        $('btn-verify').textContent = "Request Access";
-      }
-    } catch (e) {
-      $('auth-status').textContent = "❌ Network error. Check Worker URL.";
-      $('auth-status').style.color = "#ef4444";
-      $('btn-verify').textContent = "Request Access";
-    }
-    
+        localStorage.setItem('pro_phone', phone); if ($('pro-pin-setup').value) localStorage.setItem('pro_pin', $('pro-pin-setup').value);
+        $('auth-status').textContent = "✅ " + data.message; $('auth-status').style.color = "#10b981";
+      } else { $('auth-status').textContent = "❌ " + data.error; $('auth-status').style.color = "#ef4444"; }
+    } catch (e) { $('auth-status').textContent = "❌ Network error."; $('auth-status').style.color = "#ef4444"; }
     $('btn-verify').disabled = false;
   });
 
-  // ---------- GENERATION ----------
+  // ---------- GENERATION & POLLING ----------
   $('btn-do-generate').addEventListener('click', async () => {
     if (!portfolio) return;
     
@@ -255,10 +162,7 @@
     const useAI = $('use-ai').checked;
     const jobAdText = $('job-ad').value || '';
 
-    if (!useAI && uploadedFileData) {
-      alert("You uploaded a file. Pro AI is required to read images, PDFs, or Docs. Please check the 'Use Pro Cloud AI' box.");
-      return;
-    }
+    if (!useAI && uploadedFileData) return alert("You uploaded a file. Pro AI is required to read it.");
 
     if (docType === 'normal_cv') {
       portfolio.personal.address = $('extra-address').value;
@@ -266,76 +170,87 @@
       portfolio.personal.nationality = $('extra-nationality').value;
     }
 
-    const btn = $('btn-do-generate'), originalText = btn.textContent; 
-    let html = '';
-
     if (useAI && (docType === 'cover_letter' || docType === 'application_letter')) {
-      btn.textContent = 'Connecting to Cloud AI...'; 
-      btn.disabled = true;
-      
       const phone = localStorage.getItem('pro_phone');
-      if (!phone) {
-         alert("Please request Pro Access first.");
-         btn.textContent = originalText; btn.disabled = false;
-         return;
-      }
+      if (!phone) return alert("Please request Pro Access first.");
       
       const safePayload = { 
-        action: "generate", phone: phone, type: docType, jobTitle: jobTitle, company: company, 
+        action: "generate_async", phone: phone, type: docType, jobTitle, company, 
         degree: portfolio.education[0]?.degree || "my degree", 
         skills: portfolio.skills.technical?.slice(0,3).join(", ") || "my skills",
-        jobAdText: jobAdText, fileData: uploadedFileData, fileType: uploadedFileType
+        jobAdText, fileData: uploadedFileData, fileType: uploadedFileType
       };
       
+      // 1. Tell Worker to start
       try {
-        const response = await fetch(WORKER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(safePayload)
-        });
+        const res = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(safePayload) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to start");
         
-        const data = await response.json();
+        // 2. Go to Home Screen and show Banner
+        show('screen-home');
+        const banner = $('ai-status-banner'); const bText = $('banner-text'); const bBtn = $('btn-view-doc');
+        banner.style.display = 'block'; banner.style.background = '#fef3c7'; banner.style.color = '#92400e';
+        bText.textContent = "⏳ Connecting to AI..."; bBtn.style.display = 'none';
         
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to generate");
-        }
-        
-        let aiTemplate = data.text;
-        aiTemplate = aiTemplate.replace(/\[NAME\]/g, portfolio.personal.fullName).replace(/\[PHONE\]/g, portfolio.personal.phone).replace(/\[EMAIL\]/g, portfolio.personal.email);
-        html = buildLetterFromTemplate(aiTemplate);
-        
-      } catch (e) { 
-        alert('AI Error: ' + e.message); 
-        html = buildLetter(portfolio, docType === 'cover_letter' ? 'cover' : 'application', jobTitle, company); 
-      }
-      btn.textContent = originalText; btn.disabled = false;
+        // 3. Start Polling
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(async () => {
+          try {
+            const pRes = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "check_job_status", phone }) });
+            const job = await pRes.json();
+            
+            if (job.status === "processing") {
+              bText.textContent = `⏳ Generating... (Attempt ${job.attempt}/6)`;
+            } else if (job.status === "done") {
+              clearInterval(pollingInterval);
+              banner.style.background = '#d1fae5'; banner.style.color = '#065f46';
+              bText.textContent = `✅ Document Ready! (${job.creditsUsed}/12 credits used)`;
+              bBtn.style.display = 'block';
+              
+              // Prep the HTML for preview
+              let aiTemplate = job.text.replace(/\[NAME\]/g, portfolio.personal.fullName).replace(/\[PHONE\]/g, portfolio.personal.phone).replace(/\[EMAIL\]/g, portfolio.personal.email);
+              currentAiHtml = buildLetterFromTemplate(aiTemplate);
+            } else if (job.status === "error") {
+              clearInterval(pollingInterval);
+              banner.style.background = '#fee2e2'; banner.style.color = '#991b1b';
+              bText.textContent = `❌ Error: ${job.error}`;
+            }
+          } catch (e) { console.warn("Polling error", e); }
+        }, 3000);
+
+      } catch (e) { alert('AI Error: ' + e.message); }
+
     } else {
+      // OFFLINE GENERATION
+      let html = '';
       if (docType === 'professional_cv') html = buildProfessionalCV(portfolio);
       else if (docType === 'normal_cv') html = buildNormalCV(portfolio);
       else if (docType === 'cover_letter') html = buildLetter(portfolio, 'cover', jobTitle, company);
       else if (docType === 'application_letter') html = buildLetter(portfolio, 'application', jobTitle, company);
+      
+      $('preview-frame').srcdoc = html; show('screen-preview');
     }
-    
-    $('preview-frame').srcdoc = html; 
-    show('screen-preview');
   });
 
-  // ---------- NATIVE ANDROID PRINT HOOK ----------
+  // View Document Button inside the Banner
+  $('btn-view-doc').addEventListener('click', () => {
+    if (currentAiHtml) {
+      $('preview-frame').srcdoc = currentAiHtml;
+      show('screen-preview');
+    }
+  });
+
   $('btn-print').addEventListener('click', () => { 
     const htmlContent = $('preview-frame').srcdoc;
-    
-    if (window.AndroidPrint && window.AndroidPrint.printPage) {
-      window.AndroidPrint.printPage(htmlContent);
-    } else {
-      $('preview-frame').contentWindow.focus(); 
-      $('preview-frame').contentWindow.print(); 
-    }
+    if (window.AndroidPrint && window.AndroidPrint.printPage) window.AndroidPrint.printPage(htmlContent);
+    else { $('preview-frame').contentWindow.focus(); $('preview-frame').contentWindow.print(); }
   });
   
   document.querySelectorAll('[data-home], [data-back]').forEach(b => b.addEventListener('click', () => show('screen-home')));
   $('btn-go-generate').addEventListener('click', () => show('screen-generate'));
 
-  // ---------- OFFLINE TEMPLATES ----------
+  // ---------- TEMPLATES ----------
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   function buildProfessionalCV(p) {
