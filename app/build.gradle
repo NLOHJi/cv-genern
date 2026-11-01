@@ -11,8 +11,8 @@ android {
         applicationId "com.rw.cvstudio"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 11 // CHANGE THIS FOR EVERY NEW BUILD
+        versionName "2.2"
     }
 
     buildTypes {
@@ -32,4 +32,11 @@ android {
 dependencies {
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.resourceinspection:resourceinspection-annotation:1.0.1'
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.resourceinspection:resourceinspection-annotation:1.0.1'
+    }
 }

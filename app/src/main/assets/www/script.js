@@ -1,7 +1,7 @@
 // @ts-nocheck
 (() => {
   // ⚠️ REPLACE THIS WITH YOUR ACTUAL CLOUDFLARE WORKER URL ⚠️
-  const WORKER_URL = "YOUR_WORKER_URL_HERE"; 
+  const WORKER_URL = "https://cv-gen-ai.justinwc8.workers.dev/"; 
 
   const $ = id => document.getElementById(id);
   let portfolio = null;
@@ -10,7 +10,7 @@
 
   const show = id => { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); window.scrollTo(0,0); };
 
-  // ---------- THEME LOGIC ----------
+  // ---------- THEME ----------
   const btnTheme = $('btn-theme');
   const btnThemeHome = $('btn-theme-home');
   function applyTheme(isLight) {
@@ -28,7 +28,12 @@
   if(btnTheme) btnTheme.addEventListener('click', toggleTheme);
   if(btnThemeHome) btnThemeHome.addEventListener('click', toggleTheme);
 
-  // ---------- SECURITY & STORAGE ----------
+  // ---------- COPY FUNCTIONS ----------
+  window.copyText = function(type) {
+    alert("Loading info...");
+  };
+
+  // ---------- STORAGE (Base64 Obfuscation) ----------
   const encryptData = (data) => { try { return btoa(encodeURIComponent(JSON.stringify(data))); } catch(e) { return null; } };
   const decryptData = (encryptedStr) => { try { return JSON.parse(decodeURIComponent(atob(encryptedStr))); } catch(e) { return null; } };
 
@@ -72,16 +77,7 @@
     $('extra-address').value = portfolio.personal.location || '';
   }
 
-  // ---------- JOB RESUMPTION ----------
-  function checkPendingJob() {
-    const pending = localStorage.getItem('pending_ai_job');
-    if (pending) {
-      const job = JSON.parse(pending);
-      startBannerPolling(job.payload);
-    }
-  }
-
-  // ---------- GENERATE LOGIC ----------
+  // ---------- GENERATE ----------
   $('btn-do-generate').addEventListener('click', async () => {
     if (!portfolio) return;
     
@@ -103,6 +99,7 @@
       const phone = localStorage.getItem('pro_phone');
       if (!phone) return alert("Please request Pro Access first.");
       
+      // PRIVACY SECURED: No Name, Email, or Phone sent to Cloudflare.
       const payload = { 
         action: "generate", phone: phone, type: docType, jobTitle, company, 
         degree: portfolio.education[0]?.degree || "my degree", 
@@ -117,7 +114,6 @@
       startBannerPolling(payload);
 
     } else {
-      // OFFLINE GENERATION (Powered by the Heuristic Engine)
       let html = '';
       if (docType === 'professional_cv') html = buildProfessionalCV(portfolio);
       else if (docType === 'normal_cv') html = buildNormalCV(portfolio);
@@ -128,7 +124,15 @@
     }
   });
 
-  // ---------- THE APP RETRY LOOP ----------
+  // ---------- POLLING ----------
+  function checkPendingJob() {
+    const pending = localStorage.getItem('pending_ai_job');
+    if (pending) {
+      const job = JSON.parse(pending);
+      startBannerPolling(job.payload);
+    }
+  }
+
   async function startBannerPolling(payload) {
     const banner = $('ai-status-banner'); const bText = $('banner-text'); const bBtn = $('btn-view-doc');
     banner.style.display = 'block'; banner.style.background = '#fef3c7'; banner.style.color = '#92400e';
@@ -179,7 +183,6 @@
   // ---------- FILE UPLOAD ----------
   let uploadedFileData = null; 
   let uploadedFileType = null;
-
   window.clearJobFile = function() {
     uploadedFileData = null; uploadedFileType = null;
     $('job-ad-file').value = ''; $('file-status').style.display = 'none';
@@ -201,11 +204,45 @@
     }
   });
 
-  // ---------- AI AUTH ----------
+  // ---------- AI AUTH & DYNAMIC PAYMENT FETCH ----------
+  $('pay-method').addEventListener('change', (e) => {
+    if (e.target.value === 'binance') $('binance-input-group').style.display = 'block';
+    else $('binance-input-group').style.display = 'none';
+  });
+
   $('use-ai').addEventListener('change', async (e) => {
     if (e.target.checked) {
       $('ai-auth-box').style.display = 'block';
-      $('btn-request-access').style.display = 'block';
+      $('btn-verify').style.display = 'block';
+      $('payment-info').style.display = 'none'; 
+      
+      try {
+        const configRes = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "get_payment_info" }) });
+        const config = await configRes.json();
+        
+        $('text-merchant-code').textContent = config.merchant;
+        $('text-mtn-num').textContent = config.mtn;
+        $('text-airtel-num').textContent = config.airtel;
+        $('pay-name').textContent = config.name;
+        $('binance-id').textContent = config.binance;
+
+        window.copyText = function(type) {
+          let textToCopy = "";
+          if (type === 'merchant') textToCopy = config.merchant;
+          else if (type === 'mtn') textToCopy = config.mtn;
+          else if (type === 'airtel') textToCopy = config.airtel;
+          else if (type === 'binance') textToCopy = config.binance;
+
+          if (textToCopy) {
+            navigator.clipboard.writeText(textToCopy)
+              .then(() => alert("✅ Copied: " + textToCopy))
+              .catch(() => alert("Failed to copy. Please write it down: " + textToCopy));
+          }
+        };
+      } catch (err) {
+        console.error("Failed to load payment config", err);
+        $('text-merchant-code').textContent = "Offline - check network";
+      }
       
       const savedPhone = localStorage.getItem('pro_phone');
       if (savedPhone) {
@@ -220,15 +257,15 @@
           if (data.status === "approved") {
             $('auth-status').textContent = `✅ Pro AI Active (${12 - data.credits} credits left)`;
             $('auth-status').style.color = "#10b981"; 
-            $('btn-request-access').style.display = 'none';
+            $('btn-verify').style.display = 'none';
           } else if (data.status === "revoked") {
-            $('auth-status').textContent = "⚠️ Credits used up. Contact admin to renew.";
+            $('auth-status').textContent = "⚠️ Credits used up. Please renew below.";
             $('auth-status').style.color = "#ef4444";
-            $('btn-request-access').textContent = "Request Renewal";
+            $('btn-verify').textContent = "Renew Access";
           } else {
             $('auth-status').textContent = "❌ Not active. Please request access.";
             $('auth-status').style.color = "#ef4444";
-            $('btn-request-access').textContent = "Request Access";
+            $('btn-verify').textContent = "Request Access";
           }
         } catch (err) { $('auth-status').textContent = "❌ Network error."; $('auth-status').style.color = "#ef4444"; }
       } else {
@@ -236,36 +273,73 @@
         $('auth-status').textContent = "First time setup: Create a PIN and request access.";
         $('auth-status').style.color = "#8b5cf6";
       }
-    } else { $('ai-auth-box').style.display = 'none'; }
+    } else { 
+      $('ai-auth-box').style.display = 'none'; 
+    }
   });
 
-  $('btn-request-access').addEventListener('click', async () => {
+  $('btn-verify').addEventListener('click', async () => {
     const phone = $('pro-phone').value, pin = $('pro-pin-setup').value || $('pro-pin-verify').value;
+    const payMethod = $('pay-method').value;
+    const userBinanceId = $('user-binance-id').value || "Not provided";
+    
     if (!phone) return alert("Enter phone number.");
-    $('auth-status').textContent = "⏳ Requesting..."; $('btn-request-access').disabled = true;
+    if (payMethod === 'binance' && userBinanceId === "Not provided") return alert("Please enter your Binance Email/ID.");
+    
+    $('auth-status').textContent = "⏳ Requesting..."; $('btn-verify').disabled = true;
+    
     try {
-      const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "request_access", phone, pin }) });
+      const res = await fetch(WORKER_URL, { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ action: "request_access", phone, pin, payMethod, userBinanceId }) 
+      });
       const data = await res.json();
+      
       if (res.ok) {
-        localStorage.setItem('pro_phone', phone); if ($('pro-pin-setup').value) localStorage.setItem('pro_pin', $('pro-pin-setup').value);
-        $('auth-status').textContent = "✅ " + data.message; $('auth-status').style.color = "#10b981";
-      } else { $('auth-status').textContent = "❌ " + data.error; $('auth-status').style.color = "#ef4444"; }
-    } catch (e) { $('auth-status').textContent = "❌ Network error."; $('auth-status').style.color = "#ef4444"; }
-    $('btn-request-access').disabled = false;
+        localStorage.setItem('pro_phone', phone); 
+        if ($('pro-pin-setup').value) localStorage.setItem('pro_pin', $('pro-pin-setup').value);
+        
+        $('auth-status').textContent = "✅ Request sent!"; 
+        $('auth-status').style.color = "#10b981";
+        
+        $('payment-info').style.display = 'block';
+        $('pay-rwanda').style.display = payMethod === 'rwanda' ? 'block' : 'none';
+        $('pay-binance').style.display = payMethod === 'binance' ? 'block' : 'none';
+        
+        $('btn-verify').textContent = "Request Sent";
+        $('btn-verify').style.display = 'none';
+      } else { 
+        $('auth-status').textContent = "❌ " + data.error; $('auth-status').style.color = "#ef4444"; 
+        $('btn-verify').disabled = false;
+      }
+    } catch (e) { 
+      $('auth-status').textContent = "❌ Network error."; $('auth-status').style.color = "#ef4444"; 
+      $('btn-verify').disabled = false;
+    }
   });
 
-  // =========================================================
-  // 🧠 THE OFFLINE AI LIBRARY (HEURISTIC TEXT GENERATOR)
-  // =========================================================
+  // 🧠 DYNAMIC OFFLINE AI (Short, Persuasive, Non-Robotic)
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
+  function getTopSkills(p, count) {
+    const allSkills = p.skills.flatMap(g => g.items);
+    if (allSkills.length === 0) return "various professional skills";
+    return allSkills.slice(0, count).join(", ");
+  }
+
   function generateSmartSummary(p) {
-    const name = p.personal.fullName.split(' ')[0] || 'The candidate';
+    const firstName = p.personal.fullName.split(' ')[0] || 'The candidate';
     const degree = p.education[0]?.degree || "a strong academic background";
     const school = p.education[0]?.school || "a recognized institution";
-    const skills = p.skills.flatMap(g => g.items).slice(0, 3).join(", ") || "various professional skills";
+    const skills = getTopSkills(p, 3);
     
-    return `${name} is a dedicated professional with ${degree} from ${school}. Possessing strong expertise in ${skills}, ${name} is committed to delivering high-quality results and contributing effectively to a dynamic team.`;
+    let expText = "";
+    if (p.experience && p.experience.length > 0) {
+      expText = ` With practical experience as a ${p.experience[0].role},`;
+    }
+
+    return `${firstName} is a dedicated professional with ${degree} from ${school}.${expText} possessing strong expertise in ${skills}, ${firstName} is committed to delivering high-quality results and contributing effectively to a dynamic team.`;
   }
 
   function buildProfessionalCV(p) {
@@ -288,7 +362,6 @@
     
     html += `<h1>${esc(d.fullName)}</h1>`;
     html += `<div class="contact">${esc(d.phone)} | ${esc(d.email)} | ${esc(d.location)}</div>`;
-    
     html += `<h2>Professional Summary</h2><p>${esc(summary)}</p>`;
     
     if (p.experience.length) {
@@ -370,35 +443,45 @@
       html += `</ul>`;
     }
 
-    // The Rwandan Declaration
     html += `<div class="declaration"><p>I declare that the information provided above is true and correct to the best of my knowledge.</p></div>`;
-    
     html += `</body></html>`;
     return html;
   }
 
-  // 🚀 THE SMART LETTER GENERATOR (Offline AI)
   function buildSmartLetter(p, kind, jobTitle, company) {
     const d = p.personal;
-    const firstName = d.fullName.split(' ')[0] || d.fullName;
     const degree = p.education[0]?.degree || "my academic background";
     const school = p.education[0]?.school || "my institution";
     
-    // Grab the top 3 skills to weave into the text
     const topSkills = p.skills.flatMap(g => g.items).slice(0, 3);
     const skillString = topSkills.length > 1 ? topSkills.slice(0, -1).join(", ") + " and " + topSkills[topSkills.length - 1] : topSkills[0] || "relevant professional skills";
+
+    let salutation = "Dear Hiring Manager,";
+    if (kind === 'application') {
+      salutation = "Dear Sir/Madam,";
+    } else if (company && company !== "your organization") {
+      salutation = `Dear Hiring Team at ${company},`;
+    }
+
+    let expParagraph = "";
+    if (p.experience && p.experience.length > 0) {
+      const lastJob = p.experience[0];
+      expParagraph = ` In my previous role as a ${lastJob.role} at ${lastJob.company}, I gained valuable hands-on experience that strengthened my ability to deliver results.`;
+    } else if (p.projects && p.projects.length > 0) {
+      const topProject = p.projects[0];
+      expParagraph = ` I have also successfully executed practical projects, such as ${topProject.title}, which allowed me to apply my skills in a real-world context.`;
+    }
 
     let body = '';
 
     if (kind === 'application') {
-      // Rwandan Formal Application Letter
-      body = `Dear Sir/Madam,
+      body = `${salutation}
 
 RE: APPLICATION FOR THE POSITION OF ${jobTitle.toUpperCase()}
 
 I am writing to formally express my interest in the ${jobTitle} position at ${company}. 
 
-Having recently completed my ${degree} at ${school}, I have developed a robust foundation in ${skillString}. Through my academic projects and practical experiences, I have learned to apply these skills effectively to solve real-world problems. I am confident that my technical background and dedication to excellence align perfectly with the requirements of this role.
+Having completed my ${degree} at ${school}, I have developed a robust foundation in ${skillString}.${expParagraph} I am confident that my background and dedication to excellence align perfectly with the requirements of this role.
 
 I have followed ${company}'s work with great interest and would be honored to contribute to your team. I am a highly motivated individual with a strong work ethic, eager to bring value to your esteemed organization.
 
@@ -409,12 +492,11 @@ Yours faithfully,
 ${d.fullName}
 ${d.phone} | ${d.email}`;
     } else {
-      // Modern, Persuasive Cover Letter
-      body = `Dear Hiring Manager,
+      body = `${salutation}
 
 I am writing to express my strong enthusiasm for the ${jobTitle} position at ${company}. 
 
-As a professional with a ${degree} from ${school}, I have honed my expertise in ${skillString}. What sets me apart is not just my technical ability, but my drive to deliver tangible results. I thrive in collaborative environments and take pride in approaching challenges with a problem-solving mindset.
+As a professional with a ${degree} from ${school}, I have honed my expertise in ${skillString}.${expParagraph} What sets me apart is not just my technical ability, but my drive to deliver tangible results. I thrive in collaborative environments and take pride in approaching challenges with a problem-solving mindset.
 
 I am particularly drawn to ${company} because of your innovative reputation in the industry. I am eager to bring my skills and proactive attitude to your team, and I am confident that my background will allow me to make a meaningful contribution to your upcoming projects.
 

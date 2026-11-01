@@ -9,7 +9,6 @@
 </head>
 <body>
 
-<!-- IMPORT SCREEN -->
 <section id="screen-import" class="screen active">
   <div class="hero-bg"></div>
   <header class="bar glass">
@@ -19,23 +18,22 @@
   <main class="pad">
     <div class="card glass" style="text-align: center; margin-top: 10vh;">
       <div style="font-size: 40px; margin-bottom: 10px;">📁</div>
-      <h2>NEED PORTFOLIO \n TO WORK </h2>
-      <p class="muted" style="margin-bottom: 20px;">ENTER your <h1>.json</h1> Portfolio</p>
+      <h2>Import Portfolio</h2>
+      <p class="muted" style="margin-bottom: 20px;">Select the <h2>.json</h2> from Portfolio Generator.</p>
       <input type="file" id="json-import" accept=".json" style="display: none;">
-      <button class="primary block" onclick="document.getElementById('json-import').click()"><h2>ADD+</h2></button>
+      <button class="primary block" onclick="document.getElementById('json-import').click()">ADD+</button>
     </div>
   </main>
 </section>
 
-<!-- HOME SCREEN -->
 <section id="screen-home" class="screen">
   <div class="hero-bg"></div>
   <header class="bar glass">
-    <h1>Dashboard <span style="font-size: 10px; color: #8b5cf6;">v1.7</span></h1>
+    <h1>Dashboard <span style="font-size: 10px; color: #8b5cf6;">v2.2</span></h1>
     <button id="btn-theme-home" class="icon-btn">🌙</button>
   </header>
   <main class="pad">
-    <!-- ADD THE BANNER HERE -->
+    <!-- ASYNC POLLING BANNER -->
     <div id="ai-status-banner" style="display:none; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; font-weight: bold; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
       <div id="banner-text" style="margin-bottom: 10px;">Processing...</div>
       <button id="btn-view-doc" class="primary block" style="display:none; padding: 10px; background: #10b981;">📄 View Generated Document</button>
@@ -50,19 +48,18 @@
         </div>
         <div style="font-size: 30px;">👤</div>
       </div>
-      <button class="ghost block" style="margin-top: 20px; font-size: 12px;" onclick="document.getElementById('json-import').click()">Replace Portfolio</button>
+      <button class="ghost block" style="margin-top: 20px; font-size: 12px;" onclick="document.getElementById('json-import').click()"><h2>Replace it</h2></button>
     </div>
 
     <button class="primary block glow" id="btn-go-generate" style="margin-top: 20px; padding: 18px; font-size: 16px;">✨ Create Document</button>
   </main>
 </section>
-  
-<!-- GENERATE SCREEN -->
+
 <section id="screen-generate" class="screen">
   <div class="hero-bg"></div>
   <header class="bar glass">
     <button class="icon-btn" data-home>←</button>
-    <h1>ENTER</h1>
+    <h1>Generate</h1>
     <div style="width: 40px;"></div>
   </header>
   <main class="pad">
@@ -71,12 +68,12 @@
       <label class="lbl">Document Type</label>
       <select id="doc-type" class="premium-input">
         <option value="professional_cv">Professional CV</option>
-        <option value="normal_cv">Normal CV (Rdan)</option>
+        <option value="normal_cv">Normal CV (Rwandan Tables)</option>
         <option value="cover_letter">Cover Letter</option>
         <option value="application_letter">Application Letter</option>
       </select>
 
-      <label class="lbl">Job Title (Optional)</label>
+      <label class="lbl">Target Job Title (Optional)</label>
       <input type="text" id="job-title" class="premium-input" placeholder="e.g. Irrigation Technician">
 
       <label class="lbl">Company Name (Optional)</label>
@@ -98,45 +95,98 @@
       <textarea id="job-ad" class="premium-input" rows="3" placeholder="Paste the job description here, or attach a file below..."></textarea>
       <input type="file" id="job-ad-file" accept="*/*" style="display: none;">
       <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <button type="button" class="ghost" style="flex:1; font-size:12px; padding: 8px;" onclick="document.getElementById('job-ad-file').click()">
-          📎 Attach Any File (Image, PDF, Doc)
-        </button>
+        <button type="button" class="ghost" style="flex:1; font-size:12px; padding: 8px;" onclick="document.getElementById('job-ad-file').click()">📎 Attach File (Image/PDF/Doc)</button>
         <button type="button" id="btn-clear-file" class="ghost" style="color:#ef4444; border-color:#ef4444; display:none; padding: 8px;" onclick="clearJobFile()">✕</button>
       </div>
-      <p id="file-status" class="muted" style="font-size:12px; margin-top:8px; display:none; color:#3b82f6; font-weight:bold; word-break: break-all;"></p>
+      <p id="file-status" class="muted" style="font-size:12px; margin-top:8px; display:none; color:#3b82f6; font-weight:bold;"></p>
     </div>
 
+    <!-- PRO AI TOGGLE WITH PRICE INFO -->
     <div class="card glass pro-card">
       <label class="row" style="font-weight: bold; cursor: pointer; color: #fff;">
         <input type="checkbox" id="use-ai" style="width: auto; margin:0; width: 20px; height: 20px; accent-color: #8b5cf6;">
         <span style="background: linear-gradient(90deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">✨ Use Pro Cloud AI</span>
       </label>
+      <div style="margin-top: 8px; padding: 8px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
+        <p class="muted" style="font-size: 12px; margin: 0; color: #10b981; font-weight: bold;">💰 Pro Access: $0.68 (~1000 RWF) for 12 Credits (Documents)</p>
+      </div>
       <p class="muted" style="font-size: 11px; margin-top: 8px; margin-bottom:0; color: #94a3b8;">Privacy-First: Sends only public job details to the AI. Fills in your private data locally.</p>
     </div>
 
+    <!-- AI AUTH BOX -->
     <div class="card glass" id="ai-auth-box" style="display:none; border-left: 4px solid #8b5cf6;">
-      <label class="lbl" style="color:#8b5cf6;">Phone Number</label>
+      <label class="lbl" style="color:#8b5cf6;">Pro Phone Number</label>
       <input type="tel" id="pro-phone" class="premium-input" placeholder="e.g. 0788123456">
       
+      <label class="lbl" style="color:#8b5cf6;">Payment Method</label>
+      <select id="pay-method" class="premium-input" style="margin-bottom: 10px;">
+        <option value="rwanda">Rwanda (MoMo / Airtel Money)</option>
+        <option value="binance">International (Binance)</option>
+      </select>
+
+      <div id="binance-input-group" style="display:none; margin-bottom: 10px;">
+        <label class="lbl" style="color:#f59e0b;">Your Binance Email/ID</label>
+        <input type="text" id="user-binance-id" class="premium-input" placeholder="Enter your Binance email so Admin can verify">
+      </div>
+
       <div id="pin-setup-group">
         <label class="lbl" style="color:#8b5cf6;">Create a 4-digit PIN</label>
         <input type="password" id="pro-pin-setup" class="premium-input" maxlength="4" placeholder="e.g. 1234">
       </div>
       
       <div id="pin-verify-group" style="display:none;">
-        <label class="lbl" style="color:#8b5cf6;">Enter your PIN</label>
+        <label class="lbl" style="color:#8b5cf6;">Enter Security PIN</label>
         <input type="password" id="pro-pin-verify" class="premium-input" maxlength="4" placeholder="e.g. 1234">
       </div>
       
-      <button type="button" id="btn-verify" class="primary block" style="margin-top: 15px; padding: 10px; font-size: 13px; background: #8b5cf6;"><h2>VERIFY</h2></button>
+      <button type="button" id="btn-verify" class="primary block" style="margin-top: 15px; padding: 10px; font-size: 13px; background: #8b5cf6;">Request Access</button>
+      
+      <!-- PAYMENT INSTRUCTIONS -->
+      <div id="payment-info" style="display:none; margin-top: 15px; padding: 15px; background: rgba(139, 92, 246, 0.1); border-radius: 10px; border: 1px dashed #8b5cf6; text-align: center;">
+        
+        <!-- Rwanda Instructions -->
+        <div id="pay-rwanda" style="display:none;">
+          <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #8b5cf6; text-align: center;">Pay via MTN / Airtel Money:</p>
+
+          <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+            <p style="margin: 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Merchant Code (MoMo/Airtel)</p>
+            <p style="margin: 2px 0; font-size: 14px; font-weight: bold; color: var(--text-main);" id="text-merchant-code">*182*8*1*...#</p>
+            <button type="button" class="ghost" style="margin-top: 5px; font-size: 11px; padding: 4px 8px;" onclick="copyText('merchant')">📋 Copy Code</button>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+            <p style="margin: 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Direct MTN Number</p>
+            <p style="margin: 2px 0; font-size: 14px; font-weight: bold; color: var(--text-main);" id="text-mtn-num">0788000000</p>
+            <button type="button" class="ghost" style="margin-top: 5px; font-size: 11px; padding: 4px 8px;" onclick="copyText('mtn')">📋 Copy MTN</button>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+            <p style="margin: 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Direct Airtel Number</p>
+            <p style="margin: 2px 0; font-size: 14px; font-weight: bold; color: var(--text-main);" id="text-airtel-num">0730000000</p>
+            <button type="button" class="ghost" style="margin-top: 5px; font-size: 11px; padding: 4px 8px;" onclick="copyText('airtel')">📋 Copy Airtel</button>
+          </div>
+
+          <p style="margin: 10px 0 0 0; font-size: 12px; color: var(--text-muted);">Name: <span id="pay-name">Business Name</span></p>
+        </div>
+
+        <!-- Binance Instructions -->
+        <div id="pay-binance" style="display:none;">
+          <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #f59e0b;">Pay via Binance Pay:</p>
+          <p style="margin: 0 0 5px 0; font-size: 13px; color: var(--text-main);">1. Send to my Binance ID:</p>
+          <p style="margin: 0; font-size: 14px; font-weight: bold; color: var(--text-main);">🆔 <span id="binance-id">123456789</span></p>
+          <button type="button" class="ghost" style="margin-top: 10px; font-size: 11px; padding: 5px 10px;" onclick="copyText('binance')">📋 Copy Binance ID</button>
+          <p style="margin: 10px 0 0 0; font-size: 11px; color: #10b981;">✅ Your Binance ID was sent to Admin for verification.</p>
+        </div>
+
+      </div>
+      
       <p id="auth-status" class="muted" style="font-size: 11px; margin-top: 10px; color: #8b5cf6; text-align: center;"></p>
     </div>
 
-    <button id="btn-do-generate" class="primary block glow" style="margin-top: 20px; padding: 18px; font-size: 16px;">Generate</button>
+    <button id="btn-do-generate" class="primary block glow" style="margin-top: 20px; padding: 18px; font-size: 16px;">Generate Document</button>
   </main>
 </section>
 
-<!-- PREVIEW SCREEN -->
 <section id="screen-preview" class="screen">
   <header class="bar glass">
     <button class="icon-btn" data-back>←</button>
