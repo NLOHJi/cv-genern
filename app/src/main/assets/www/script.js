@@ -29,11 +29,9 @@
   if(btnThemeHome) btnThemeHome.addEventListener('click', toggleTheme);
 
   // ---------- COPY FUNCTIONS ----------
-  window.copyText = function(type) {
-    alert("Loading info...");
-  };
+  window.copyText = function(type) { alert("Loading payment info, please try again."); };
 
-  // ---------- STORAGE (Base64 Obfuscation) ----------
+  // ---------- STORAGE ----------
   const encryptData = (data) => { try { return btoa(encodeURIComponent(JSON.stringify(data))); } catch(e) { return null; } };
   const decryptData = (encryptedStr) => { try { return JSON.parse(decodeURIComponent(atob(encryptedStr))); } catch(e) { return null; } };
 
@@ -74,10 +72,15 @@
     if (!portfolio) return;
     $('active-name').textContent = portfolio.personal.fullName || 'Unknown Name';
     $('active-headline').textContent = portfolio.personal.headline || 'No headline provided';
-    $('extra-address').value = portfolio.personal.location || '';
   }
 
   // ---------- GENERATE ----------
+  $('doc-type').addEventListener('change', e => {
+    const type = e.target.value;
+    // Show extra fields for BOTH Professional and Normal CV
+    $('extra-fields').style.display = (type === 'normal_cv' || type === 'professional_cv') ? 'block' : 'none';
+  });
+
   $('btn-do-generate').addEventListener('click', async () => {
     if (!portfolio) return;
     
@@ -89,17 +92,19 @@
 
     if (!useAI && uploadedFileData) return alert("You uploaded a file. Pro AI is required to read it.");
 
-    if (docType === 'normal_cv') {
-      portfolio.personal.address = $('extra-address').value;
-      portfolio.personal.dob = $('extra-dob').value;
-      portfolio.personal.nationality = $('extra-nationality').value;
-    }
+    // Gather the extra typed details
+    const extraData = {
+      idNumber: $('extra-id').value,
+      dob: $('extra-dob').value,
+      placeOfBirth: $('extra-place-of-birth').value,
+      nationality: $('extra-nationality').value,
+      maritalStatus: $('extra-marital-status').value
+    };
 
     if (useAI && (docType === 'cover_letter' || docType === 'application_letter')) {
       const phone = localStorage.getItem('pro_phone');
       if (!phone) return alert("Please request Pro Access first.");
       
-      // PRIVACY SECURED: No Name, Email, or Phone sent to Cloudflare.
       const payload = { 
         action: "generate", phone: phone, type: docType, jobTitle, company, 
         degree: portfolio.education[0]?.degree || "my degree", 
@@ -115,8 +120,8 @@
 
     } else {
       let html = '';
-      if (docType === 'professional_cv') html = buildProfessionalCV(portfolio);
-      else if (docType === 'normal_cv') html = buildNormalCV(portfolio);
+      if (docType === 'professional_cv') html = buildProfessionalCV(portfolio, extraData);
+      else if (docType === 'normal_cv') html = buildNormalCV(portfolio, extraData);
       else if (docType === 'cover_letter') html = buildSmartLetter(portfolio, 'cover', jobTitle, company);
       else if (docType === 'application_letter') html = buildSmartLetter(portfolio, 'application', jobTitle, company);
       
@@ -319,7 +324,7 @@
     }
   });
 
-  // 🧠 DYNAMIC OFFLINE AI (Short, Persuasive, Non-Robotic)
+  // 🧠 DYNAMIC OFFLINE AI (Matches Handwritten Notes)
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   function getTopSkills(p, count) {
@@ -342,15 +347,19 @@
     return `${firstName} is a dedicated professional with ${degree} from ${school}.${expText} possessing strong expertise in ${skills}, ${firstName} is committed to delivering high-quality results and contributing effectively to a dynamic team.`;
   }
 
-  function buildProfessionalCV(p) {
+  // UPDATED: Professional CV with Photo and ID details
+  function buildProfessionalCV(p, extra) {
     const d = p.personal;
     const summary = p.about || generateSmartSummary(p);
     const allSkills = p.skills.flatMap(g => g.items);
 
     let html = `<html><head><meta charset="utf-8"><style>
       body{font-family:Georgia,serif;font-size:13px;line-height:1.6;color:#222;padding:40px;max-width:800px;margin:0 auto}
-      h1{font-size:26px;text-align:center;margin:0 0 4px;letter-spacing:1px;color:#111}
-      .contact{text-align:center;font-size:12px;color:#555;margin-bottom:30px;border-bottom:1px solid #ccc;padding-bottom:15px}
+      .header{text-align:center; margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 15px;}
+      .photo{width:110px; height:110px; border-radius:50%; object-fit:cover; margin-bottom:15px; border: 2px solid #333;}
+      h1{font-size:26px;margin:0 0 4px;letter-spacing:1px;color:#111}
+      .contact{font-size:12px;color:#555;}
+      .id-details{font-size:12px; color:#555; margin-top:5px;}
       h2{font-size:14px;text-transform:uppercase;border-bottom:1px solid #333;padding-bottom:4px;margin-top:25px;letter-spacing:1px}
       .item{margin-bottom:15px}
       .item strong{font-size:14px;display:block;color:#000}
@@ -360,8 +369,24 @@
       p{margin:5px 0}
     </style></head><body>`;
     
+    html += `<div class="header">`;
+    if (d.photo) html += `<img src="${d.photo}" class="photo" alt="Profile Photo">`;
     html += `<h1>${esc(d.fullName)}</h1>`;
     html += `<div class="contact">${esc(d.phone)} | ${esc(d.email)} | ${esc(d.location)}</div>`;
+    
+    // Add the extra typed details
+    const idInfo = [];
+    if (extra.idNumber) idInfo.push(`ID: ${esc(extra.idNumber)}`);
+    if (extra.dob) idInfo.push(`DOB: ${esc(extra.dob)}`);
+    if (extra.nationality) idInfo.push(`Nationality: ${esc(extra.nationality)}`);
+    if (extra.maritalStatus) idInfo.push(`Marital Status: ${esc(extra.maritalStatus)}`);
+    
+    if (idInfo.length > 0) {
+      html += `<div class="id-details">${idInfo.join(' | ')}</div>`;
+    }
+    
+    html += `</div>`;
+    
     html += `<h2>Professional Summary</h2><p>${esc(summary)}</p>`;
     
     if (p.experience.length) {
@@ -399,46 +424,64 @@
     return html;
   }
 
-  function buildNormalCV(p) {
+  // UPDATED: Normal CV matching Image 2 and using typed ExtraData
+  function buildNormalCV(p, extra) {
     const d = p.personal;
     let html = `<html><head><meta charset="utf-8"><style>
-      body{font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#111;padding:30px}
-      h1{font-size:22px;text-align:center;margin:0;letter-spacing:3px}
-      .contact{text-align:center;font-size:12px;margin:8px 0 20px}
-      h2{font-size:14px;background:#eee;padding:6px 8px;margin-top:20px;border-left:4px solid #333}
-      table{width:100%;border-collapse:collapse;margin-top:6px}
-      td,th{border:1px solid #999;padding:6px 8px;font-size:12px;vertical-align:top}
-      th{background:#f3f3f3;text-align:left;font-weight:bold}
-      ul{margin:5px 0;padding-left:20px}
-      .declaration{margin-top:30px;font-size:12px;font-style:italic}
+      body{font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#111;padding:30px;max-width:800px;margin:0 auto}
+      h1{font-size:22px;text-align:center;margin:0 0 20px;letter-spacing:2px;text-decoration:underline}
+      h2{font-size:14px;margin-top:25px;margin-bottom:10px;text-decoration:underline}
+      table{width:100%;border-collapse:collapse;margin-bottom:15px}
+      td,th{padding:6px;font-size:12px;vertical-align:top;border: 1px solid #333;}
+      th{background:#f0f0f0;text-align:left;font-weight:bold;}
+      .info-table td:first-child { width: 30%; font-weight: bold; }
+      .declaration{margin-top:40px;font-size:12px;font-style:italic}
     </style></head><body>`;
     
     html += `<h1>CURRICULUM VITAE</h1>`;
-    html += `<div class="contact"><strong>${esc(d.fullName)}</strong><br>Phone: ${esc(d.phone)} | Email: ${esc(d.email)}<br>`;
-    const addr = []; if (d.address) addr.push(`Address: ${esc(d.address)}`); if (d.dob) addr.push(`DOB: ${esc(d.dob)}`); if (d.nationality) addr.push(`Nationality: ${esc(d.nationality)}`);
-    html += addr.join(' | ') + `</div>`;
+    
+    // 1. IDENTIFICATION (Uses ExtraData)
+    html += `<h2>1. IDENTIFICATION</h2>`;
+    html += `<table class="info-table">`;
+    html += `<tr><td>Name:</td><td>${esc(d.fullName)}</td></tr>`;
+    if (extra.idNumber) html += `<tr><td>ID Number:</td><td>${esc(extra.idNumber)}</td></tr>`;
+    html += `<tr><td>Date of birth:</td><td>${esc(extra.dob)}</td></tr>`;
+    html += `<tr><td>Place of birth:</td><td>${esc(extra.placeOfBirth)}</td></tr>`;
+    html += `<tr><td>Nationality:</td><td>${esc(extra.nationality)}</td></tr>`;
+    html += `<tr><td>Marital status:</td><td>${esc(extra.maritalStatus)}</td></tr>`;
+    html += `<tr><td>Phone:</td><td>${esc(d.phone)}</td></tr>`;
+    html += `<tr><td>Email:</td><td>${esc(d.email)}</td></tr>`;
+    html += `<tr><td>Address:</td><td>${esc(d.location)}</td></tr>`;
+    html += `</table>`;
 
+    // 2. EDUCATION
     if (p.education.length) {
-      html += `<h2>1. EDUCATION BACKGROUND</h2><table><tr><th style="width:20%">Period</th><th style="width:40%">School</th><th style="width:40%">Certificate</th></tr>`;
+      html += `<h2>2. EDUCATION</h2>`;
+      html += `<table><tr><th style="width:20%">Year</th><th style="width:40%">School</th><th style="width:40%">Award/Certificate</th></tr>`;
       p.education.forEach(e => html += `<tr><td>${esc(e.period)}</td><td>${esc(e.school)}</td><td>${esc(e.degree)}</td></tr>`);
       html += `</table>`;
     }
 
+    // 3. WORK EXPERIENCE
     if (p.experience.length) {
-      html += `<h2>2. WORK EXPERIENCE</h2><table><tr><th style="width:20%">Period</th><th style="width:30%">Place</th><th style="width:50%">Task Done</th></tr>`;
-      p.experience.forEach(e => html += `<tr><td>${esc(e.period)}</td><td>${esc(e.company)}</td><td>${esc(e.description)}</td></tr>`);
+      html += `<h2>3. WORK EXPERIENCE</h2>`;
+      html += `<table><tr><th style="width:20%">Year</th><th style="width:40%">Place/Institution</th><th style="width:40%">Position/Job</th></tr>`;
+      p.experience.forEach(e => html += `<tr><td>${esc(e.period)}</td><td>${esc(e.company)}</td><td>${esc(e.role)}</td></tr>`);
       html += `</table>`;
     }
 
-    html += `<h2>3. SKILLS</h2><ul>`;
-    p.skills.forEach(g => {
-      if (g.items.length) html += `<li><strong>${esc(g.category)}:</strong> ${g.items.map(esc).join(', ')}</li>`;
-    });
-    if (p.languages.length) html += `<li><strong>Languages:</strong> ${p.languages.map(l => `${esc(l.name)} (${esc(l.level)})`).join(', ')}</li>`;
-    html += `</ul>`;
+    // SKILLS
+    if (p.skills.length) {
+      html += `<h2>4. SKILLS</h2><ul>`;
+      p.skills.forEach(g => {
+        if (g.items.length) html += `<li><strong>${esc(g.category)}:</strong> ${g.items.map(esc).join(', ')}</li>`;
+      });
+      if (p.languages.length) html += `<li><strong>Languages:</strong> ${p.languages.map(l => `${esc(l.name)} (${esc(l.level)})`).join(', ')}</li>`;
+      html += `</ul>`;
+    }
 
     if (p.references.length) {
-      html += `<h2>4. REFERENCES</h2><ul>`;
+      html += `<h2>5. REFERENCES</h2><ul>`;
       p.references.forEach((r) => html += `<li>${esc(r.name)} – ${esc(r.role)}, ${esc(r.organization)} (${esc(r.phone)})</li>`);
       html += `</ul>`;
     }
@@ -448,20 +491,27 @@
     return html;
   }
 
+  // Letter matching Image 1
   function buildSmartLetter(p, kind, jobTitle, company) {
     const d = p.personal;
     const degree = p.education[0]?.degree || "my academic background";
     const school = p.education[0]?.school || "my institution";
+    const today = new Date().toLocaleDateString('en-GB');
     
     const topSkills = p.skills.flatMap(g => g.items).slice(0, 3);
     const skillString = topSkills.length > 1 ? topSkills.slice(0, -1).join(", ") + " and " + topSkills[topSkills.length - 1] : topSkills[0] || "relevant professional skills";
 
-    let salutation = "Dear Hiring Manager,";
-    if (kind === 'application') {
-      salutation = "Dear Sir/Madam,";
-    } else if (company && company !== "your organization") {
-      salutation = `Dear Hiring Team at ${company},`;
-    }
+    let headerBlock = `
+Name: ${d.fullName}
+Email: ${d.email}
+Phone: ${d.phone}
+Location: ${d.location}
+Date: ${today}
+`;
+
+    let subject = `\nRE: ${kind === 'application' ? 'APPLICATION' : 'COVER LETTER'} FOR THE POSITION OF ${jobTitle.toUpperCase()}\n`;
+
+    let salutation = kind === 'application' ? "Dear Sir/Madam," : "Dear Hiring Manager,";
 
     let expParagraph = "";
     if (p.experience && p.experience.length > 0) {
@@ -477,8 +527,6 @@
     if (kind === 'application') {
       body = `${salutation}
 
-RE: APPLICATION FOR THE POSITION OF ${jobTitle.toUpperCase()}
-
 I am writing to formally express my interest in the ${jobTitle} position at ${company}. 
 
 Having completed my ${degree} at ${school}, I have developed a robust foundation in ${skillString}.${expParagraph} I am confident that my background and dedication to excellence align perfectly with the requirements of this role.
@@ -489,8 +537,7 @@ Thank you for considering my application. I have attached my CV for your review 
 
 Yours faithfully,
 
-${d.fullName}
-${d.phone} | ${d.email}`;
+${d.fullName}`;
     } else {
       body = `${salutation}
 
@@ -504,23 +551,15 @@ Thank you for your time and consideration. I would welcome the opportunity to di
 
 Sincerely,
 
-${d.fullName}
-${d.phone} | ${d.email}`;
+${d.fullName}`;
     }
+
+    let fullText = `${headerBlock}${subject}\n${body}`;
 
     return `<html><head><meta charset="utf-8"><style>
       body{font-family:Georgia,serif;font-size:13px;line-height:1.8;padding:50px;color:#222;max-width:800px;margin:0 auto}
-      .header{margin-bottom:40px;border-bottom:1px solid #ccc;padding-bottom:15px}
-      .header strong{font-size:18px;display:block;margin-bottom:5px}
-      .header span{color:#555;font-size:12px}
       pre{white-space:pre-wrap;font-family:inherit;margin:0}
-    </style></head><body>
-      <div class="header">
-        <strong>${esc(d.fullName)}</strong>
-        <span>${esc(d.phone)} | ${esc(d.email)} | ${esc(d.location)}</span>
-      </div>
-      <pre>${esc(body)}</pre>
-    </body></html>`;
+    </style></head><body><pre>${esc(fullText)}</pre></body></html>`;
   }
 
   function buildLetterFromTemplate(templateText) {

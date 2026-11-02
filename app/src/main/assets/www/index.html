@@ -19,9 +19,9 @@
     <div class="card glass" style="text-align: center; margin-top: 10vh;">
       <div style="font-size: 40px; margin-bottom: 10px;">📁</div>
       <h2>Import Portfolio</h2>
-      <p class="muted" style="margin-bottom: 20px;">Select the <h2>.json</h2> from Portfolio Generator.</p>
+      <p class="muted" style="margin-bottom: 20px;">Select the <h2>.json</h2> Portfolio.</p>
       <input type="file" id="json-import" accept=".json" style="display: none;">
-      <button class="primary block" onclick="document.getElementById('json-import').click()">ADD+</button>
+      <button class="primary block" onclick="document.getElementById('json-import').click()"><h2>ADD\n+</h2></button>
     </div>
   </main>
 </section>
@@ -29,14 +29,13 @@
 <section id="screen-home" class="screen">
   <div class="hero-bg"></div>
   <header class="bar glass">
-    <h1>Dashboard <span style="font-size: 10px; color: #8b5cf6;">v2.2</span></h1>
+    <h1>Dashboard <span style="font-size: 10px; color: #8b5cf6;">v2.4</span></h1>
     <button id="btn-theme-home" class="icon-btn">🌙</button>
   </header>
   <main class="pad">
-    <!-- ASYNC POLLING BANNER -->
     <div id="ai-status-banner" style="display:none; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; font-weight: bold; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
       <div id="banner-text" style="margin-bottom: 10px;">Processing...</div>
-      <button id="btn-view-doc" class="primary block" style="display:none; padding: 10px; background: #10b981;">📄 View Generated Document</button>
+      <button id="btn-view-doc" class="primary block" style="display:none; padding: 10px; background: #10b981;">📄 Browse it</button>
     </div>
 
     <div class="card glass">
@@ -48,10 +47,10 @@
         </div>
         <div style="font-size: 30px;">👤</div>
       </div>
-      <button class="ghost block" style="margin-top: 20px; font-size: 12px;" onclick="document.getElementById('json-import').click()"><h2>Replace it</h2></button>
+      <button class="ghost block" style="margin-top: 20px; font-size: 12px;" onclick="document.getElementById('json-import').click()">Enter new</button>
     </div>
 
-    <button class="primary block glow" id="btn-go-generate" style="margin-top: 20px; padding: 18px; font-size: 16px;">✨ Create Document</button>
+    <button class="primary block glow" id="btn-go-generate" style="margin-top: 20px; padding: 18px; font-size: 16px;">✨ Create</button>
   </main>
 </section>
 
@@ -59,7 +58,7 @@
   <div class="hero-bg"></div>
   <header class="bar glass">
     <button class="icon-btn" data-home>←</button>
-    <h1>Generate</h1>
+    <h1>ENTER</h1>
     <div style="width: 40px;"></div>
   </header>
   <main class="pad">
@@ -80,14 +79,19 @@
       <input type="text" id="company" class="premium-input" placeholder="e.g. Rwanda Agriculture Board">
     </div>
 
+    <!-- EXTRA FIELDS FOR BOTH CV TYPES -->
     <div class="card glass" id="extra-fields" style="display:none; border-left: 4px solid #f59e0b;">
-      <p class="muted" style="margin-top:0; font-weight:bold; color:#f59e0b;">Normal CV Details:</p>
-      <label class="lbl">Address</label>
-      <input type="text" id="extra-address" class="premium-input" placeholder="e.g. Gicumbi, Rwanda">
+      <p class="muted" style="margin-top:0; font-weight:bold; color:#f59e0b;">CV Identification Details:</p>
+      <label class="lbl">ID Number (Optional)</label>
+      <input type="text" id="extra-id" class="premium-input" placeholder="e.g. 1199570012345678">
       <label class="lbl">Date of Birth</label>
       <input type="text" id="extra-dob" class="premium-input" placeholder="e.g. 12/05/2002">
+      <label class="lbl">Place of Birth</label>
+      <input type="text" id="extra-place-of-birth" class="premium-input" placeholder="e.g. Kigali">
       <label class="lbl">Nationality</label>
       <input type="text" id="extra-nationality" class="premium-input" placeholder="e.g. Rwandan">
+      <label class="lbl">Marital Status</label>
+      <input type="text" id="extra-marital-status" class="premium-input" placeholder="e.g. Single">
     </div>
 
     <div class="card glass">
@@ -101,7 +105,6 @@
       <p id="file-status" class="muted" style="font-size:12px; margin-top:8px; display:none; color:#3b82f6; font-weight:bold;"></p>
     </div>
 
-    <!-- PRO AI TOGGLE WITH PRICE INFO -->
     <div class="card glass pro-card">
       <label class="row" style="font-weight: bold; cursor: pointer; color: #fff;">
         <input type="checkbox" id="use-ai" style="width: auto; margin:0; width: 20px; height: 20px; accent-color: #8b5cf6;">
@@ -113,7 +116,6 @@
       <p class="muted" style="font-size: 11px; margin-top: 8px; margin-bottom:0; color: #94a3b8;">Privacy-First: Sends only public job details to the AI. Fills in your private data locally.</p>
     </div>
 
-    <!-- AI AUTH BOX -->
     <div class="card glass" id="ai-auth-box" style="display:none; border-left: 4px solid #8b5cf6;">
       <label class="lbl" style="color:#8b5cf6;">Pro Phone Number</label>
       <input type="tel" id="pro-phone" class="premium-input" placeholder="e.g. 0788123456">
@@ -141,10 +143,8 @@
       
       <button type="button" id="btn-verify" class="primary block" style="margin-top: 15px; padding: 10px; font-size: 13px; background: #8b5cf6;">Request Access</button>
       
-      <!-- PAYMENT INSTRUCTIONS -->
       <div id="payment-info" style="display:none; margin-top: 15px; padding: 15px; background: rgba(139, 92, 246, 0.1); border-radius: 10px; border: 1px dashed #8b5cf6; text-align: center;">
         
-        <!-- Rwanda Instructions -->
         <div id="pay-rwanda" style="display:none;">
           <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #8b5cf6; text-align: center;">Pay via MTN / Airtel Money:</p>
 
@@ -169,7 +169,6 @@
           <p style="margin: 10px 0 0 0; font-size: 12px; color: var(--text-muted);">Name: <span id="pay-name">Business Name</span></p>
         </div>
 
-        <!-- Binance Instructions -->
         <div id="pay-binance" style="display:none;">
           <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #f59e0b;">Pay via Binance Pay:</p>
           <p style="margin: 0 0 5px 0; font-size: 13px; color: var(--text-main);">1. Send to my Binance ID:</p>
