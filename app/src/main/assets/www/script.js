@@ -319,9 +319,11 @@
         $('btn-verify').disabled = false;
       }
     } catch (e) { 
-      $('auth-status').textContent = "❌ Network error."; $('auth-status').style.color = "#ef4444"; 
-      $('btn-verify').disabled = false;
-    }
+    // Show the REAL error message
+        $('auth-status').textContent = "❌ " + e.message; 
+        $('auth-status').style.color = "#ef4444"; 
+        $('btn-request-access').disabled = false;
+} 
   });
 
   // 🧠 DYNAMIC OFFLINE AI (Matches Handwritten Notes)
