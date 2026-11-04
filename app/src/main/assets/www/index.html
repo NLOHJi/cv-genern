@@ -21,7 +21,7 @@
       <h2>Import Portfolio</h2>
       <p class="muted" style="margin-bottom: 20px;">Select the <h2>.json</h2> Portfolio.</p>
       <input type="file" id="json-import" accept=".json" style="display: none;">
-      <button class="primary block" onclick="document.getElementById('json-import').click()"><h2>ADD\n+</h2></button>
+      <button class="primary block" onclick="document.getElementById('json-import').click()"><h2>ADD+</h2></button>
     </div>
   </main>
 </section>
@@ -128,12 +128,12 @@
 
       <div id="binance-input-group" style="display:none; margin-bottom: 10px;">
         <label class="lbl" style="color:#f59e0b;">Your Binance Email/ID</label>
-        <input type="text" id="user-binance-id" class="premium-input" placeholder="Enter your Binance email so Admin can verify">
+        <input type="text" id="user-binance-id" class="premium-input" placeholder="Enter your Binance email">
       </div>
 
       <div id="pin-setup-group">
         <label class="lbl" style="color:#8b5cf6;">Create a 4-digit PIN</label>
-        <input type="password" id="pro-pin-setup" class="premium-input" maxlength="4" placeholder="e.g. 1234">
+        <input type="password" id="pro-pin-setup" class="premium-input" maxlength="4" placeholder=" ">
       </div>
       
       <div id="pin-verify-group" style="display:none;">
@@ -174,7 +174,7 @@
           <p style="margin: 0 0 5px 0; font-size: 13px; color: var(--text-main);">1. Send to my Binance ID:</p>
           <p style="margin: 0; font-size: 14px; font-weight: bold; color: var(--text-main);">🆔 <span id="binance-id">123456789</span></p>
           <button type="button" class="ghost" style="margin-top: 10px; font-size: 11px; padding: 5px 10px;" onclick="copyText('binance')">📋 Copy Binance ID</button>
-          <p style="margin: 10px 0 0 0; font-size: 11px; color: #10b981;">✅ Your Binance ID was sent to Admin for verification.</p>
+          <p style="margin: 10px 0 0 0; font-size: 11px; color: #10b981;">✅ Sent to Admin for verification.</p>
         </div>
 
       </div>
@@ -182,7 +182,7 @@
       <p id="auth-status" class="muted" style="font-size: 11px; margin-top: 10px; color: #8b5cf6; text-align: center;"></p>
     </div>
 
-    <button id="btn-do-generate" class="primary block glow" style="margin-top: 20px; padding: 18px; font-size: 16px;">Generate Document</button>
+    <button id="btn-do-generate" class="primary block glow" style="margin-top: 20px; padding: 18px; font-size: 16px;">ENTER</button>
   </main>
 </section>
 

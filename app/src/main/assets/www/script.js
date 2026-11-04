@@ -1,6 +1,5 @@
 // @ts-nocheck
 (() => {
-  // ⚠️ REPLACE THIS WITH YOUR ACTUAL CLOUDFLARE WORKER URL ⚠️
   const WORKER_URL = "https://cv-gen-ai.justinwc8.workers.dev/"; 
 
   const $ = id => document.getElementById(id);
@@ -77,7 +76,6 @@
   // ---------- GENERATE ----------
   $('doc-type').addEventListener('change', e => {
     const type = e.target.value;
-    // Show extra fields for BOTH Professional and Normal CV
     $('extra-fields').style.display = (type === 'normal_cv' || type === 'professional_cv') ? 'block' : 'none';
   });
 
@@ -90,9 +88,8 @@
     const useAI = $('use-ai').checked;
     const jobAdText = $('job-ad').value || '';
 
-    if (!useAI && uploadedFileData) return alert("You uploaded a file. Pro AI is required to read it.");
+    if (!useAI && uploadedFileData) return alert("pro reading...");
 
-    // Gather the extra typed details
     const extraData = {
       idNumber: $('extra-id').value,
       dob: $('extra-dob').value,
@@ -103,7 +100,7 @@
 
     if (useAI && (docType === 'cover_letter' || docType === 'application_letter')) {
       const phone = localStorage.getItem('pro_phone');
-      if (!phone) return alert("Please request Pro Access first.");
+      if (!phone) return alert("pro access required.");
       
       const payload = { 
         action: "generate", phone: phone, type: docType, jobTitle, company, 
@@ -145,7 +142,10 @@
 
     try {
       const res = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      const data = await res.json();
+      
+      const rawText = await res.text();
+      let data;
+      try { data = JSON.parse(rawText); } catch(e) { data = { error: rawText }; }
       
       if (!res.ok) {
         if (res.status === 503 && retryCount < 5) {
@@ -154,7 +154,7 @@
           setTimeout(() => startBannerPolling(payload), 10000);
           return;
         }
-        throw new Error(data.error || "Failed to generate");
+        throw new Error(data.error || "Generate failed");
       }
 
       localStorage.removeItem('pending_ai_job');
@@ -241,13 +241,10 @@
           if (textToCopy) {
             navigator.clipboard.writeText(textToCopy)
               .then(() => alert("✅ Copied: " + textToCopy))
-              .catch(() => alert("Failed to copy. Please write it down: " + textToCopy));
+              .catch(() => alert("Failed. Please write it down: " + textToCopy));
           }
         };
-      } catch (err) {
-        console.error("Failed to load payment config", err);
-        $('text-merchant-code').textContent = "Offline - check network";
-      }
+      } catch (err) { console.error("Failed to load payment config", err); }
       
       const savedPhone = localStorage.getItem('pro_phone');
       if (savedPhone) {
@@ -289,7 +286,7 @@
     const userBinanceId = $('user-binance-id').value || "Not provided";
     
     if (!phone) return alert("Enter phone number.");
-    if (payMethod === 'binance' && userBinanceId === "Not provided") return alert("Please enter your Binance Email/ID.");
+    if (payMethod === 'binance' && userBinanceId === "Not provided") return alert("Enter your Binance Email/ID.");
     
     $('auth-status').textContent = "⏳ Requesting..."; $('btn-verify').disabled = true;
     
@@ -297,10 +294,13 @@
       const res = await fetch(WORKER_URL, { 
         method: "POST", 
         headers: { "Content-Type": "application/json" }, 
-        body: JSON.stringify({ action: "request_access", phone, pin, payMethod, userBinanceId }) 
+        body: JSON.stringify({ action: "verify", phone, pin, payMethod, userBinanceId }) 
       });
-      const data = await res.json();
       
+      const rawText = await res.text();
+      let data;
+      try { data = JSON.parse(rawText); } catch (e) { data = { error: rawText }; }
+
       if (res.ok) {
         localStorage.setItem('pro_phone', phone); 
         if ($('pro-pin-setup').value) localStorage.setItem('pro_pin', $('pro-pin-setup').value);
@@ -315,45 +315,89 @@
         $('btn-verify').textContent = "Request Sent";
         $('btn-verify').style.display = 'none';
       } else { 
-        $('auth-status').textContent = "❌ " + data.error; $('auth-status').style.color = "#ef4444"; 
+        $('auth-status').textContent = "❌ " + (data.error || "Failed"); 
+        $('auth-status').style.color = "#ef4444"; 
         $('btn-verify').disabled = false;
       }
     } catch (e) { 
-    // Show the REAL error message
-        $('auth-status').textContent = "❌ " + e.message; 
-        $('auth-status').style.color = "#ef4444"; 
-        $('btn-verify').disabled = false;
-} 
+      $('auth-status').textContent = "❌ " + e.message; 
+      $('auth-status').style.color = "#ef4444"; 
+      $('btn-verify').disabled = false;
+    }
   });
 
-  // 🧠 DYNAMIC OFFLINE AI (Matches Handwritten Notes)
+  // 🧠 THE UPGRADED OFFLINE AI (Precise & Grammatical)
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-  function getTopSkills(p, count) {
-    const allSkills = p.skills.flatMap(g => g.items);
-    if (allSkills.length === 0) return "various professional skills";
-    return allSkills.slice(0, count).join(", ");
+  // 1. Grammar & Formatting Helper
+  function cleanText(str) {
+    if (!str) return "";
+    let s = str.trim();
+    if (s.length === 0) return "";
+    // Capitalize first letter
+    s = s.charAt(0).toUpperCase() + s.slice(1);
+    // Fix "a" vs "an"
+    if (s.startsWith("A ") && ["a","e","i","o","u"].includes(s.charAt(2).toLowerCase())) {
+      s = "An " + s.slice(2);
+    }
+    return s;
+  }
+
+  // 2. Smart Skill Selection
+  function getSmartSkills(p) {
+    let technical = [];
+    let soft = [];
+    
+    p.skills.forEach(g => {
+      g.items.forEach(skill => {
+        if (skill.trim() === "") return;
+        if (g.category.toLowerCase().includes("soft") || g.category.toLowerCase().includes("interpersonal")) {
+          soft.push(skill.toLowerCase());
+        } else {
+          technical.push(skill);
+        }
+      });
+    });
+
+    // Take top 3 technical, top 1 soft
+    let techStr = technical.slice(0, 3).join(", ");
+    let softStr = soft.length > 0 ? soft[0] : "";
+
+    return { techStr, softStr };
   }
 
   function generateSmartSummary(p) {
     const firstName = p.personal.fullName.split(' ')[0] || 'The candidate';
-    const degree = p.education[0]?.degree || "a strong academic background";
-    const school = p.education[0]?.school || "a recognized institution";
-    const skills = getTopSkills(p, 3);
+    const edu = p.education.find(e => e.degree && e.school);
+    const degree = edu ? cleanText(edu.degree) : "a strong academic background";
+    const school = edu ? cleanText(edu.school) : "a recognized institution";
     
-    let expText = "";
-    if (p.experience && p.experience.length > 0) {
-      expText = ` With practical experience as a ${p.experience[0].role},`;
+    const { techStr, softStr } = getSmartSkills(p);
+
+    // Find best experience or project
+    const validExp = p.experience.filter(e => e.role && e.company);
+    const validProj = p.projects.filter(pr => pr.title);
+
+    let actionText = "";
+    if (validExp.length > 0) {
+      actionText = ` With hands-on experience as a ${cleanText(validExp[0].role)} at ${cleanText(validExp[0].company)},`;
+    } else if (validProj.length > 0) {
+      actionText = ` Having successfully delivered projects like "${cleanText(validProj[0].title)}",`;
     }
 
-    return `${firstName} is a dedicated professional with ${degree} from ${school}.${expText} possessing strong expertise in ${skills}, ${firstName} is committed to delivering high-quality results and contributing effectively to a dynamic team.`;
+    let profile = `${firstName} is a dedicated professional with ${degree} from ${school}.${actionText} possessing strong expertise in ${techStr || "various technical fields"}.`;
+    
+    if (softStr) {
+      profile += ` Known for ${softStr}, ${firstName} is committed to delivering high-quality results.`;
+    }
+
+    return profile;
   }
 
-  // UPDATED: Professional CV with Photo and ID details
   function buildProfessionalCV(p, extra) {
     const d = p.personal;
     const summary = p.about || generateSmartSummary(p);
-    const allSkills = p.skills.flatMap(g => g.items);
+    const allSkills = p.skills.flatMap(g => g.items).filter(s => s.trim() !== "");
 
     let html = `<html><head><meta charset="utf-8"><style>
       body{font-family:Georgia,serif;font-size:13px;line-height:1.6;color:#222;padding:40px;max-width:800px;margin:0 auto}
@@ -376,16 +420,13 @@
     html += `<h1>${esc(d.fullName)}</h1>`;
     html += `<div class="contact">${esc(d.phone)} | ${esc(d.email)} | ${esc(d.location)}</div>`;
     
-    // Add the extra typed details
     const idInfo = [];
     if (extra.idNumber) idInfo.push(`ID: ${esc(extra.idNumber)}`);
     if (extra.dob) idInfo.push(`DOB: ${esc(extra.dob)}`);
     if (extra.nationality) idInfo.push(`Nationality: ${esc(extra.nationality)}`);
     if (extra.maritalStatus) idInfo.push(`Marital Status: ${esc(extra.maritalStatus)}`);
     
-    if (idInfo.length > 0) {
-      html += `<div class="id-details">${idInfo.join(' | ')}</div>`;
-    }
+    if (idInfo.length > 0) html += `<div class="id-details">${idInfo.join(' | ')}</div>`;
     
     html += `</div>`;
     
@@ -394,6 +435,7 @@
     if (p.experience.length) {
       html += `<h2>Work Experience</h2>`;
       p.experience.forEach(e => {
+        if (!e.role && !e.company) return; // Skip empty
         html += `<div class="item"><strong>${esc(e.role)}</strong><em>${esc(e.company)} | ${esc(e.period)}</em><ul>`;
         if (e.description) {
           const bullets = e.description.split('\n').filter(x => x.trim() !== '');
@@ -406,6 +448,7 @@
     if (p.education.length) {
       html += `<h2>Education</h2>`;
       p.education.forEach(e => {
+        if (!e.degree && !e.school) return;
         html += `<div class="item"><strong>${esc(e.degree)}</strong><em>${esc(e.school)} | ${esc(e.period)}</em></div>`;
       });
     }
@@ -426,7 +469,6 @@
     return html;
   }
 
-  // UPDATED: Normal CV matching Image 2 and using typed ExtraData
   function buildNormalCV(p, extra) {
     const d = p.personal;
     let html = `<html><head><meta charset="utf-8"><style>
@@ -442,7 +484,6 @@
     
     html += `<h1>CURRICULUM VITAE</h1>`;
     
-    // 1. IDENTIFICATION (Uses ExtraData)
     html += `<h2>1. IDENTIFICATION</h2>`;
     html += `<table class="info-table">`;
     html += `<tr><td>Name:</td><td>${esc(d.fullName)}</td></tr>`;
@@ -456,27 +497,31 @@
     html += `<tr><td>Address:</td><td>${esc(d.location)}</td></tr>`;
     html += `</table>`;
 
-    // 2. EDUCATION
     if (p.education.length) {
       html += `<h2>2. EDUCATION</h2>`;
       html += `<table><tr><th style="width:20%">Year</th><th style="width:40%">School</th><th style="width:40%">Award/Certificate</th></tr>`;
-      p.education.forEach(e => html += `<tr><td>${esc(e.period)}</td><td>${esc(e.school)}</td><td>${esc(e.degree)}</td></tr>`);
+      p.education.forEach(e => {
+        if (!e.degree && !e.school) return;
+        html += `<tr><td>${esc(e.period)}</td><td>${esc(e.school)}</td><td>${esc(e.degree)}</td></tr>`;
+      });
       html += `</table>`;
     }
 
-    // 3. WORK EXPERIENCE
     if (p.experience.length) {
       html += `<h2>3. WORK EXPERIENCE</h2>`;
       html += `<table><tr><th style="width:20%">Year</th><th style="width:40%">Place/Institution</th><th style="width:40%">Position/Job</th></tr>`;
-      p.experience.forEach(e => html += `<tr><td>${esc(e.period)}</td><td>${esc(e.company)}</td><td>${esc(e.role)}</td></tr>`);
+      p.experience.forEach(e => {
+        if (!e.role && !e.company) return;
+        html += `<tr><td>${esc(e.period)}</td><td>${esc(e.company)}</td><td>${esc(e.role)}</td></tr>`;
+      });
       html += `</table>`;
     }
 
-    // SKILLS
     if (p.skills.length) {
       html += `<h2>4. SKILLS</h2><ul>`;
       p.skills.forEach(g => {
-        if (g.items.length) html += `<li><strong>${esc(g.category)}:</strong> ${g.items.map(esc).join(', ')}</li>`;
+        const validItems = g.items.filter(s => s.trim() !== "");
+        if (validItems.length) html += `<li><strong>${esc(g.category)}:</strong> ${validItems.map(esc).join(', ')}</li>`;
       });
       if (p.languages.length) html += `<li><strong>Languages:</strong> ${p.languages.map(l => `${esc(l.name)} (${esc(l.level)})`).join(', ')}</li>`;
       html += `</ul>`;
@@ -484,7 +529,10 @@
 
     if (p.references.length) {
       html += `<h2>5. REFERENCES</h2><ul>`;
-      p.references.forEach((r) => html += `<li>${esc(r.name)} – ${esc(r.role)}, ${esc(r.organization)} (${esc(r.phone)})</li>`);
+      p.references.forEach((r) => {
+        if (!r.name) return;
+        html += `<li>${esc(r.name)} – ${esc(r.role)}, ${esc(r.organization)} (${esc(r.phone)})</li>`;
+      });
       html += `</ul>`;
     }
 
@@ -493,16 +541,31 @@
     return html;
   }
 
-  // Letter matching Image 1
   function buildSmartLetter(p, kind, jobTitle, company) {
     const d = p.personal;
-    const degree = p.education[0]?.degree || "my academic background";
-    const school = p.education[0]?.school || "my institution";
     const today = new Date().toLocaleDateString('en-GB');
     
-    const topSkills = p.skills.flatMap(g => g.items).slice(0, 3);
-    const skillString = topSkills.length > 1 ? topSkills.slice(0, -1).join(", ") + " and " + topSkills[topSkills.length - 1] : topSkills[0] || "relevant professional skills";
+    // 1. Contextual Fetching
+    const edu = p.education.find(e => e.degree && e.school);
+    const degree = edu ? cleanText(edu.degree) : "my academic background";
+    const school = edu ? cleanText(edu.school) : "my institution";
+    
+    const { techStr, softStr } = getSmartSkills(p);
 
+    // 2. Smart Experience/Project Paragraph
+    let expParagraph = "";
+    const validExp = p.experience.filter(e => e.role && e.company);
+    const validProj = p.projects.filter(pr => pr.title);
+
+    if (validExp.length > 0) {
+      const lastJob = validExp[0];
+      expParagraph = ` In my previous role as a ${cleanText(lastJob.role)} at ${cleanText(lastJob.company)}, I gained valuable hands-on experience that strengthened my ability to deliver results.`;
+    } else if (validProj.length > 0) {
+      const topProject = validProj[0];
+      expParagraph = ` I have also successfully executed practical projects, such as ${cleanText(topProject.title)}, which allowed me to apply my skills in a real-world context.`;
+    }
+
+    // 3. Build the Letter
     let headerBlock = `
 Name: ${d.fullName}
 Email: ${d.email}
@@ -515,15 +578,6 @@ Date: ${today}
 
     let salutation = kind === 'application' ? "Dear Sir/Madam," : "Dear Hiring Manager,";
 
-    let expParagraph = "";
-    if (p.experience && p.experience.length > 0) {
-      const lastJob = p.experience[0];
-      expParagraph = ` In my previous role as a ${lastJob.role} at ${lastJob.company}, I gained valuable hands-on experience that strengthened my ability to deliver results.`;
-    } else if (p.projects && p.projects.length > 0) {
-      const topProject = p.projects[0];
-      expParagraph = ` I have also successfully executed practical projects, such as ${topProject.title}, which allowed me to apply my skills in a real-world context.`;
-    }
-
     let body = '';
 
     if (kind === 'application') {
@@ -531,9 +585,9 @@ Date: ${today}
 
 I am writing to formally express my interest in the ${jobTitle} position at ${company}. 
 
-Having completed my ${degree} at ${school}, I have developed a robust foundation in ${skillString}.${expParagraph} I am confident that my background and dedication to excellence align perfectly with the requirements of this role.
+Having completed my ${degree} at ${school}, I have developed a robust foundation in ${techStr || "my field"}.${expParagraph} I am confident that my background and dedication to excellence align perfectly with the requirements of this role.
 
-I have followed ${company}'s work with great interest and would be honored to contribute to your team. I am a highly motivated individual with a strong work ethic, eager to bring value to your esteemed organization.
+I have followed ${company}'s work with great interest and would be honored to contribute to your team. I am a highly motivated individual with a strong work ethic${softStr ? ` and a proven ability to demonstrate ${softStr}` : ""}, eager to bring value to your esteemed organization.
 
 Thank you for considering my application. I have attached my CV for your review and look forward to the opportunity to discuss my qualifications further.
 
@@ -545,7 +599,7 @@ ${d.fullName}`;
 
 I am writing to express my strong enthusiasm for the ${jobTitle} position at ${company}. 
 
-As a professional with a ${degree} from ${school}, I have honed my expertise in ${skillString}.${expParagraph} What sets me apart is not just my technical ability, but my drive to deliver tangible results. I thrive in collaborative environments and take pride in approaching challenges with a problem-solving mindset.
+As a professional with a ${degree} from ${school}, I have honed my expertise in ${techStr || "my field"}.${expParagraph} What sets me apart is not just my technical ability, but my drive to deliver tangible results.${softStr ? ` I pride myself on my ${softStr} and take a collaborative approach to problem-solving.` : " I thrive in collaborative environments and take pride in approaching challenges with a problem-solving mindset."}
 
 I am particularly drawn to ${company} because of your innovative reputation in the industry. I am eager to bring my skills and proactive attitude to your team, and I am confident that my background will allow me to make a meaningful contribution to your upcoming projects.
 
