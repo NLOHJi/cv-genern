@@ -322,7 +322,7 @@
     // Show the REAL error message
         $('auth-status').textContent = "❌ " + e.message; 
         $('auth-status').style.color = "#ef4444"; 
-        $('btn-request-access').disabled = false;
+        $('btn-verify').disabled = false;
 } 
   });
 
